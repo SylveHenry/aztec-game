@@ -1,22 +1,20 @@
 'use client';
 
 import React from 'react';
-import { Position, GameState } from '@/types/game';
+import { GameState } from '@/types/game';
 
 interface GameBoardProps {
   gameState: GameState;
   onCellMouseDown: (row: number, col: number) => void;
   onCellMouseEnter: (row: number, col: number) => void;
   onCellMouseUp: () => void;
-  isSelecting: boolean;
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({
   gameState,
   onCellMouseDown,
   onCellMouseEnter,
-  onCellMouseUp,
-  isSelecting
+  onCellMouseUp
 }) => {
   const { grid, selectedCells, wordsToFind } = gameState;
 

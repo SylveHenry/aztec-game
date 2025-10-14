@@ -7,7 +7,7 @@ export interface WordToFind {
   word: string;
   found: boolean;
   positions: Position[];
-  direction: 'horizontal' | 'vertical' | 'diagonal' | 'diagonal-reverse';
+  direction: 'horizontal' | 'vertical' | 'diagonal' | 'diagonal-reverse' | 'horizontal-reverse' | 'vertical-reverse' | 'diagonal-left' | 'diagonal-left-reverse';
 }
 
 export interface GameState {
@@ -19,10 +19,15 @@ export interface GameState {
   score: number;
 }
 
+export interface WordData {
+  word: string;
+  found: boolean;
+}
+
 export interface GameData {
-  id: string;
+  id: number;
   title: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: string;
   grid: string[][];
-  words: string[];
+  words: WordData[];
 }

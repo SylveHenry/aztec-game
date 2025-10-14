@@ -16,8 +16,7 @@ export default function Home() {
     handleCellMouseDown,
     handleCellMouseEnter,
     handleCellMouseUp,
-    resetGame,
-    isSelecting
+    resetGame
   } = useWordCross(gameData);
 
   return (
@@ -43,7 +42,6 @@ export default function Home() {
               onCellMouseDown={handleCellMouseDown}
               onCellMouseEnter={handleCellMouseEnter}
               onCellMouseUp={handleCellMouseUp}
-              isSelecting={isSelecting}
             />
           </div>
           

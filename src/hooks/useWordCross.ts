@@ -5,8 +5,8 @@ import { GameState, Position, WordToFind, GameData } from '@/types/game';
 
 export const useWordCross = (gameData: GameData) => {
   const [gameState, setGameState] = useState<GameState>(() => {
-    const wordsToFind: WordToFind[] = gameData.words.map(word => ({
-      word,
+    const wordsToFind: WordToFind[] = gameData.words.map(wordData => ({
+      word: wordData.word,
       found: false,
       positions: [],
       direction: 'horizontal' as const
@@ -25,107 +25,64 @@ export const useWordCross = (gameData: GameData) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<Position | null>(null);
 
-  // Find word positions in the grid
+  // Find word positions in the grid - supports all 8 directions
   const findWordInGrid = useCallback((word: string, grid: string[][]): WordToFind | null => {
     const rows = grid.length;
     const cols = grid[0].length;
     
-    // Check horizontal
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col <= cols - word.length; col++) {
-        let match = true;
-        const positions: Position[] = [];
-        
-        for (let i = 0; i < word.length; i++) {
-          if (grid[row][col + i] !== word[i]) {
-            match = false;
-            break;
-          }
-          positions.push({ row, col: col + i });
-        }
-        
-        if (match) {
-          return {
-            word,
-            found: false,
-            positions,
-            direction: 'horizontal'
-          };
-        }
-      }
-    }
+    // Define all 8 directions: [rowDelta, colDelta, directionName]
+    const directions: [number, number, string][] = [
+      [0, 1, 'horizontal'],           // Left to right
+      [0, -1, 'horizontal-reverse'],  // Right to left
+      [1, 0, 'vertical'],             // Top to bottom
+      [-1, 0, 'vertical-reverse'],    // Bottom to top
+      [1, 1, 'diagonal'],             // Top-left to bottom-right
+      [-1, -1, 'diagonal-reverse'],   // Bottom-right to top-left
+      [1, -1, 'diagonal-left'],       // Top-right to bottom-left
+      [-1, 1, 'diagonal-left-reverse'] // Bottom-left to top-right
+    ];
 
-    // Check vertical
-    for (let row = 0; row <= rows - word.length; row++) {
-      for (let col = 0; col < cols; col++) {
-        let match = true;
-        const positions: Position[] = [];
-        
-        for (let i = 0; i < word.length; i++) {
-          if (grid[row + i][col] !== word[i]) {
-            match = false;
-            break;
+    // Check each direction
+    for (const [rowDelta, colDelta, directionName] of directions) {
+      for (let startRow = 0; startRow < rows; startRow++) {
+        for (let startCol = 0; startCol < cols; startCol++) {
+          let match = true;
+          const positions: Position[] = [];
+          
+          // Check if word fits in this direction from this starting position
+          let currentRow = startRow;
+          let currentCol = startCol;
+          
+          for (let i = 0; i < word.length; i++) {
+            // Check bounds
+            if (currentRow < 0 || currentRow >= rows || currentCol < 0 || currentCol >= cols) {
+              match = false;
+              break;
+            }
+            
+            // Check character match
+            if (grid[currentRow][currentCol] !== word[i]) {
+              match = false;
+              break;
+            }
+            
+            positions.push({ row: currentRow, col: currentCol });
+            
+            // Move to next position
+            if (i < word.length - 1) {
+              currentRow += rowDelta;
+              currentCol += colDelta;
+            }
           }
-          positions.push({ row: row + i, col });
-        }
-        
-        if (match) {
-          return {
-            word,
-            found: false,
-            positions,
-            direction: 'vertical'
-          };
-        }
-      }
-    }
-
-    // Check diagonal (top-left to bottom-right)
-    for (let row = 0; row <= rows - word.length; row++) {
-      for (let col = 0; col <= cols - word.length; col++) {
-        let match = true;
-        const positions: Position[] = [];
-        
-        for (let i = 0; i < word.length; i++) {
-          if (grid[row + i][col + i] !== word[i]) {
-            match = false;
-            break;
+          
+          if (match) {
+            return {
+              word,
+              found: false,
+              positions,
+              direction: directionName as 'horizontal' | 'vertical' | 'diagonal' | 'diagonal-reverse' | 'horizontal-reverse' | 'vertical-reverse' | 'diagonal-left' | 'diagonal-left-reverse'
+            };
           }
-          positions.push({ row: row + i, col: col + i });
-        }
-        
-        if (match) {
-          return {
-            word,
-            found: false,
-            positions,
-            direction: 'diagonal'
-          };
-        }
-      }
-    }
-
-    // Check diagonal (top-right to bottom-left)
-    for (let row = 0; row <= rows - word.length; row++) {
-      for (let col = word.length - 1; col < cols; col++) {
-        let match = true;
-        const positions: Position[] = [];
-        
-        for (let i = 0; i < word.length; i++) {
-          if (grid[row + i][col - i] !== word[i]) {
-            match = false;
-            break;
-          }
-          positions.push({ row: row + i, col: col - i });
-        }
-        
-        if (match) {
-          return {
-            word,
-            found: false,
-            positions,
-            direction: 'diagonal-reverse'
-          };
         }
       }
     }
@@ -135,10 +92,10 @@ export const useWordCross = (gameData: GameData) => {
 
   // Initialize word positions
   useEffect(() => {
-    const wordsWithPositions = gameData.words.map(word => {
-      const wordData = findWordInGrid(word, gameData.grid);
-      return wordData || {
-        word,
+    const wordsWithPositions = gameData.words.map(wordData => {
+      const wordFound = findWordInGrid(wordData.word, gameData.grid);
+      return wordFound || {
+        word: wordData.word,
         found: false,
         positions: [],
         direction: 'horizontal' as const
@@ -173,13 +130,15 @@ export const useWordCross = (gameData: GameData) => {
   const handleCellMouseUp = useCallback(() => {
     if (!isSelecting) return;
 
-    // Check if selection matches any word
+    // Check if selection matches any word (forward or backward)
     const selectedWord = gameState.selectedCells
       .map(pos => gameState.grid[pos.row][pos.col])
       .join('');
+    
+    const reversedWord = selectedWord.split('').reverse().join('');
 
     const foundWord = gameState.wordsToFind.find(word => 
-      !word.found && (word.word === selectedWord || word.word === selectedWord.split('').reverse().join(''))
+      !word.found && (word.word === selectedWord || word.word === reversedWord)
     );
 
     if (foundWord) {
@@ -210,7 +169,7 @@ export const useWordCross = (gameData: GameData) => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.selectedCells, gameState.grid, gameState.wordsToFind, gameState.foundWords, gameState.score]);
+  }, [isSelecting, gameState.selectedCells, gameState.grid, gameState.wordsToFind]);
 
   const getSelectionPath = (start: Position, end: Position): Position[] => {
     const path: Position[] = [];
@@ -251,10 +210,10 @@ export const useWordCross = (gameData: GameData) => {
   };
 
   const resetGame = useCallback(() => {
-    const wordsToFind: WordToFind[] = gameData.words.map(word => {
-      const wordData = findWordInGrid(word, gameData.grid);
-      return wordData || {
-        word,
+    const wordsToFind: WordToFind[] = gameData.words.map(wordData => {
+      const wordFound = findWordInGrid(wordData.word, gameData.grid);
+      return wordFound || {
+        word: wordData.word,
         found: false,
         positions: [],
         direction: 'horizontal' as const
