@@ -12,11 +12,14 @@ export interface WordToFind {
 
 export interface GameState {
   grid: string[][];
-  wordsToFind: WordToFind[];
+  targetWord: string;
+  targetWordPositions: Position[];
   selectedCells: Position[];
-  foundWords: string[];
-  gameCompleted: boolean;
   score: number;
+  timeRemaining: number;
+  gameStatus: 'waiting' | 'playing' | 'paused' | 'gameOver';
+  roundsPlayed: number;
+  feedbackMessage?: string;
 }
 
 export interface WordData {
@@ -30,4 +33,17 @@ export interface GameData {
   difficulty: string;
   grid: string[][];
   words: WordData[];
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  playerName: string;
+  score: number;
+  roundsPlayed: number;
+  timestamp: number;
+}
+
+export interface TimerState {
+  timeRemaining: number;
+  isRunning: boolean;
 }

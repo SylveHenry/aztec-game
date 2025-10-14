@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aztec Word Cross - Ancient Word Search Puzzle Game",
-  description: "Challenge your mind with our Aztec-themed word cross puzzle game. Find hidden words in letter grids inspired by ancient civilizations.",
+  title: "Blockchain Word Cross - Crypto Word Search Puzzle Game",
+  description: "Challenge your mind with our blockchain-themed word cross puzzle game. Find hidden cryptocurrency and blockchain terms in letter grids.",
 };
 
 export default function RootLayout({

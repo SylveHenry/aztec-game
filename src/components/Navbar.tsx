@@ -29,7 +29,7 @@ const Navbar: React.FC = () => {
               <div className="flex-shrink-0">
                 <h1 className="text-2xl font-bold text-white flex items-center">
                   <span className="mr-2">🏛️</span>
-                  Aztec Word Cross
+                  Aztec Word Hunt
                 </h1>
               </div>
             </div>

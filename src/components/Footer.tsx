@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4 flex items-center">
               <span className="mr-2">🏛️</span>
-              Aztec Word Cross
+              Aztec Word Hunt
             </h3>
             <p className="text-gray-300 text-sm">
               Challenge your mind with our ancient-themed word search puzzles. 
@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
         
         <div className="mt-8 pt-8 border-t border-gray-700 text-center">
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} Aztec Word Cross. Built with Next.js and Tailwind CSS.
+            © {new Date().getFullYear()} Aztec Word Hunt. Built with Next.js and Tailwind CSS.
           </p>
         </div>
       </div>
