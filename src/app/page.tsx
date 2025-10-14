@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import GameBoard from '@/components/GameBoard';
 import WordList from '@/components/WordList';
-import GameControls from '@/components/GameControls';
 import { useWordCross } from '@/hooks/useWordCross';
 import { getCurrentGame } from '@/data/gameData';
 
@@ -34,9 +33,9 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-4">
           {/* Game Board - Takes up 2 columns on large screens */}
-          <div className="lg:col-span-2 flex justify-center">
+          <div className="lg:col-span-2 flex justify-center w-full">
             <GameBoard
               gameState={gameState}
               onCellMouseDown={handleCellMouseDown}
@@ -45,45 +44,13 @@ export default function Home() {
             />
           </div>
           
-          {/* Sidebar with Word List and Controls */}
-          <div className="space-y-6">
+          {/* Sidebar with Word List */}
+          <div className="space-y-6 w-full">
             <WordList
               wordsToFind={gameState.wordsToFind}
               foundWords={gameState.foundWords}
               score={gameState.score}
             />
-            
-            <GameControls
-              onResetGame={resetGame}
-              gameCompleted={gameState.gameCompleted}
-              difficulty={gameData.difficulty}
-            />
-          </div>
-        </div>
-
-        {/* Game Info Section */}
-        <div className="mt-12 max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-              About {gameData.title}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-              <div className="p-4 bg-amber-50 rounded-lg">
-                <div className="text-2xl mb-2">🎯</div>
-                <h3 className="font-semibold text-gray-800">Difficulty</h3>
-                <p className="text-gray-600 capitalize">{gameData.difficulty}</p>
-              </div>
-              <div className="p-4 bg-amber-50 rounded-lg">
-                <div className="text-2xl mb-2">📝</div>
-                <h3 className="font-semibold text-gray-800">Words to Find</h3>
-                <p className="text-gray-600">{gameData.words.length} words</p>
-              </div>
-              <div className="p-4 bg-amber-50 rounded-lg">
-                <div className="text-2xl mb-2">🏆</div>
-                <h3 className="font-semibold text-gray-800">Current Score</h3>
-                <p className="text-gray-600">{gameState.score} points</p>
-              </div>
-            </div>
           </div>
         </div>
       </main>

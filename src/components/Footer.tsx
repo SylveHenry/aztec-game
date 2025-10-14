@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
         
         <div className="mt-8 pt-8 border-t border-gray-700 text-center">
           <p className="text-gray-400 text-sm">
-            © 2024 Aztec Word Cross. Built with Next.js and Tailwind CSS.
+            © {new Date().getFullYear()} Aztec Word Cross. Built with Next.js and Tailwind CSS.
           </p>
         </div>
       </div>

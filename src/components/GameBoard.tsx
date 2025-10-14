@@ -29,7 +29,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   const getCellClassName = (row: number, col: number): string => {
-    const baseClasses = "w-10 h-10 sm:w-12 sm:h-12 border-2 border-amber-300 flex items-center justify-center font-bold text-lg cursor-pointer select-none transition-all duration-200";
+    const baseClasses = "aspect-square border-2 border-amber-300 flex items-center justify-center font-bold cursor-pointer select-none transition-all duration-200 text-xs sm:text-sm md:text-base lg:text-lg";
     
     if (isCellPartOfFoundWord(row, col)) {
       return `${baseClasses} bg-green-200 text-green-800 border-green-400`;
@@ -43,10 +43,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-6 rounded-xl shadow-lg">
+    <div className="flex flex-col items-center space-y-4 w-full">
+      <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg w-full max-w-lg">
         <div 
-          className="grid gap-1"
+          className="grid gap-0.5 sm:gap-1 w-full aspect-square"
           style={{ 
             gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))`,
             userSelect: 'none'
@@ -78,7 +78,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
       </div>
       
       {gameState.gameCompleted && (
-        <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4 text-center">
+        <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4 text-center max-w-lg w-full">
           <h3 className="text-xl font-bold text-green-800 mb-2">🎉 Congratulations!</h3>
           <p className="text-green-700">
             You found all words! Final Score: <span className="font-bold">{gameState.score}</span>
