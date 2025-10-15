@@ -1,162 +1,280 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { LeaderboardEntry } from '@/types/game';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User } from '@/types/game';
+import { fetchLeaderboard } from '@/utils/auth';
+
+interface LeaderboardEntry {
+  id: string;
+  playerName: string;
+  score: number;
+  roundsPlayed: number;
+  timestamp: number;
+}
+
+interface UserPosition {
+  rank: number;
+  score: number;
+  isInTop20: boolean;
+}
 
 interface LeaderboardProps {
   currentScore: number;
   roundsPlayed: number;
   gameStatus: 'waiting' | 'playing' | 'paused' | 'gameOver';
+  currentUser?: User | null;
+  onUserUpdate?: (updatedUser: User) => void;
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({
-  currentScore,
-  roundsPlayed,
-  gameStatus
+export const Leaderboard: React.FC<LeaderboardProps> = ({ 
+  currentScore, 
+  roundsPlayed, 
+  gameStatus,
+  currentUser,
+  onUserUpdate
 }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load leaderboard from localStorage on component mount
-  useEffect(() => {
-    const savedLeaderboard = localStorage.getItem('blockchain-wordcross-leaderboard');
-    if (savedLeaderboard) {
-      try {
-        const parsed = JSON.parse(savedLeaderboard);
-        setLeaderboard(parsed);
-      } catch (error) {
-        console.error('Error parsing leaderboard data:', error);
-        setLeaderboard([]);
+  const loadLocalLeaderboard = useCallback(() => {
+    try {
+      const stored = localStorage.getItem('wordCrossLeaderboard');
+      if (stored) {
+        const entries = JSON.parse(stored);
+        setLeaderboard(entries);
       }
+    } catch (error) {
+      console.error('Failed to load local leaderboard:', error);
+      setLeaderboard([]);
     }
   }, []);
 
-  // Save score to leaderboard when game ends
-  useEffect(() => {
-    if (gameStatus === 'gameOver' && currentScore > 0) {
-      const newEntry: LeaderboardEntry = {
-        id: Date.now().toString(),
-        playerName: 'Player',
-        score: currentScore,
-        roundsPlayed,
-        timestamp: Date.now()
-      };
+  const loadLeaderboard = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const userId = currentUser?._id;
+      const response = await fetchLeaderboard(userId);
+      
+      if (response.error) {
+        console.error('Leaderboard error:', response.error);
+        loadLocalLeaderboard();
+        return;
+      }
 
-      const updatedLeaderboard = [...leaderboard, newEntry]
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Keep only top 10 scores
-
-      setLeaderboard(updatedLeaderboard);
-      localStorage.setItem('blockchain-wordcross-leaderboard', JSON.stringify(updatedLeaderboard));
+      if (response.leaderboard) {
+        // Convert database users to leaderboard entries
+        const entries: LeaderboardEntry[] = response.leaderboard.map((user: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }) => ({
+          id: user.id,
+          playerName: user.playerName,
+          score: user.score,
+          roundsPlayed: user.roundsPlayed,
+          timestamp: new Date(user.timestamp).getTime()
+        }));
+        
+        setLeaderboard(entries);
+        setUserPosition(response.userPosition || null);
+        
+        // Check if current user's high score needs to be updated
+        if (currentUser && onUserUpdate && response.userPosition) {
+          const leaderboardHighScore = response.userPosition.score;
+          if (leaderboardHighScore !== currentUser.highScore) {
+            const updatedUser = {
+              ...currentUser,
+              highScore: leaderboardHighScore
+            };
+            onUserUpdate(updatedUser);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      // Fallback to localStorage if API fails
+      loadLocalLeaderboard();
+    } finally {
+      setIsLoading(false);
     }
-  }, [gameStatus, currentScore, roundsPlayed, leaderboard]);
+  }, [currentUser, loadLocalLeaderboard, onUserUpdate]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const userId = currentUser?._id;
+        const response = await fetchLeaderboard(userId);
+        
+        if (response.error) {
+          console.error('Leaderboard error:', response.error);
+          loadLocalLeaderboard();
+          return;
+        }
+
+        if (response.leaderboard) {
+          // Convert database users to leaderboard entries
+          const entries: LeaderboardEntry[] = response.leaderboard.map((user: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }) => ({
+            id: user.id,
+            playerName: user.playerName,
+            score: user.score,
+            roundsPlayed: user.roundsPlayed,
+            timestamp: new Date(user.timestamp).getTime()
+          }));
+          
+          setLeaderboard(entries);
+          setUserPosition(response.userPosition || null);
+          
+          // Check if current user's high score needs to be updated
+          if (currentUser && onUserUpdate && response.userPosition) {
+            const leaderboardHighScore = response.userPosition.score;
+            if (leaderboardHighScore !== currentUser.highScore) {
+              const updatedUser = {
+                ...currentUser,
+                highScore: leaderboardHighScore
+              };
+              onUserUpdate(updatedUser);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load leaderboard:', error);
+        // Fallback to localStorage if API fails
+        loadLocalLeaderboard();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [currentUser, loadLocalLeaderboard, onUserUpdate]);
+
+  // Refresh leaderboard when game ends and user is authenticated
+  useEffect(() => {
+    if (gameStatus === 'gameOver' && currentUser) {
+      // Small delay to ensure score update has been processed
+      setTimeout(() => {
+        loadLeaderboard();
+      }, 1000);
+    }
+  }, [gameStatus, currentUser, loadLeaderboard]);
 
   const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return new Date(timestamp).toLocaleDateString();
   };
 
-  const clearLeaderboard = () => {
-    setLeaderboard([]);
-    localStorage.removeItem('blockchain-wordcross-leaderboard');
+  const isCurrentUser = (entry: LeaderboardEntry) => {
+    return currentUser && entry.playerName === currentUser.username;
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-800 flex items-center">
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
           🏆 Leaderboard
         </h2>
-        {leaderboard.length > 0 && (
-          <button
-            onClick={clearLeaderboard}
-            className="text-xs text-gray-500 hover:text-red-500 transition-colors"
-            title="Clear leaderboard"
-          >
-            Clear
-          </button>
-        )}
+        <div className="text-center text-gray-500">Loading...</div>
       </div>
+    );
+  }
 
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-800">
+          🏆 Top 20 Leaderboard
+        </h2>
+        <button
+          onClick={loadLeaderboard}
+          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+          disabled={isLoading}
+        >
+          {isLoading ? '⟳' : '↻'} Refresh
+        </button>
+      </div>
+      
       {/* Current Game Stats */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">Current Game</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-600">Score:</span>
-            <span className="ml-2 font-bold text-blue-600">{currentScore}</span>
-          </div>
-          <div>
-            <span className="text-gray-600">Rounds:</span>
-            <span className="ml-2 font-bold text-purple-600">{roundsPlayed}</span>
+      {currentUser && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="font-semibold text-blue-800 mb-2">Current Session</h3>
+          <div className="text-sm text-blue-700">
+            <div className="flex justify-between">
+              <span>Player:</span>
+              <span className="font-medium">{currentUser.username}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Score:</span>
+              <span className="font-medium">{currentScore}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Rounds:</span>
+              <span className="font-medium">{roundsPlayed}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>High Score:</span>
+              <span className="font-medium">{currentUser.highScore || 0}</span>
+            </div>
+            {userPosition && (
+              <div className="flex justify-between">
+                <span>Leaderboard Position:</span>
+                <span className="font-medium">
+                  #{userPosition.rank}
+                  {userPosition.isInTop20 && <span className="text-green-600 ml-1">🏆</span>}
+                </span>
+              </div>
+            )}
           </div>
         </div>
-        {gameStatus === 'gameOver' && currentScore > 0 && (
-          <div className="mt-2 text-xs text-green-600 font-medium">
-            ✨ Score saved to leaderboard!
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Leaderboard List */}
       <div className="space-y-2">
         {leaderboard.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-2">🎯</div>
-            <p className="text-sm">No scores yet!</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Play the game to see your scores here
-            </p>
+          <div className="text-center text-gray-500 py-4">
+            No scores yet. Be the first to play!
           </div>
         ) : (
-          <>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Top Scores</h3>
-            {leaderboard.map((entry, index) => (
-              <div
-                key={entry.id}
-                className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                  index === 0
-                    ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
-                    : index === 1
-                    ? 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200'
-                    : index === 2
-                    ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-orange-200'
-                    : 'bg-gray-50 border-gray-100'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    index === 0
-                      ? 'bg-yellow-400 text-yellow-900'
-                      : index === 1
-                      ? 'bg-gray-400 text-gray-900'
-                      : index === 2
-                      ? 'bg-orange-400 text-orange-900'
-                      : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {index + 1}
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-800">
-                      {entry.score} pts
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {entry.roundsPlayed} rounds
-                    </div>
-                  </div>
+          leaderboard.map((entry, index) => (
+            <div
+              key={entry.id}
+              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                isCurrentUser(entry)
+                  ? 'bg-green-50 border-green-200 shadow-sm'
+                  : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  index === 1 ? 'bg-gray-300 text-gray-700' :
+                  index === 2 ? 'bg-amber-600 text-white' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {index + 1}
                 </div>
-                <div className="text-xs text-gray-400">
-                  {formatDate(entry.timestamp)}
+                <div>
+                  <div className={`font-medium ${isCurrentUser(entry) ? 'text-green-800' : 'text-gray-800'}`}>
+                    {entry.playerName}
+                    {isCurrentUser(entry) && <span className="ml-2 text-xs text-green-600">(You)</span>}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {entry.roundsPlayed} rounds • {formatDate(entry.timestamp)}
+                  </div>
                 </div>
               </div>
-            ))}
-          </>
+              <div className={`text-lg font-bold ${isCurrentUser(entry) ? 'text-green-800' : 'text-gray-800'}`}>
+                {entry.score}
+              </div>
+            </div>
+          ))
         )}
       </div>
+
+      {/* Refresh Button */}
+      <button
+        onClick={loadLeaderboard}
+        className="w-full mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Loading...' : 'Refresh Leaderboard'}
+      </button>
     </div>
   );
 };

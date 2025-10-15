@@ -47,3 +47,27 @@ export interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
 }
+
+// Authentication types
+export interface User {
+  _id?: string;
+  username: string;
+  pin: string;
+  highScore: number;
+  totalRoundsPlayed: number;
+  createdAt: Date;
+  lastPlayedAt: Date;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  isLoading: boolean;
+}
+
+export interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAuthenticate: (user: User) => void;
+  mode: 'login' | 'register';
+}

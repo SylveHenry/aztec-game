@@ -1,14 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import GameBoard from '@/components/GameBoard';
+import AuthModal from '@/components/AuthModal';
 import { Leaderboard } from '@/components/Leaderboard';
+import { User } from '@/types/game';
 
 import { useNewWordCross } from '@/hooks/useNewWordCross';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  
   const {
     gameState,
     timerState,
@@ -20,9 +25,41 @@ export default function Home() {
     resetGame
   } = useNewWordCross();
 
+  const { user, login, logout, requireAuth, updateUserData } = useAuth();
+
+  const handleStartGame = () => {
+    if (!requireAuth()) {
+      setAuthModalOpen(true);
+      return;
+    }
+    startGame();
+  };
+
+  const handleNewGame = () => {
+    if (!requireAuth()) {
+      setAuthModalOpen(true);
+      return;
+    }
+    resetGame();
+  };
+
+  const handleLogout = () => {
+    logout();
+    setAuthModalOpen(true);
+  };
+
+  const handleAuthModalClose = () => {
+    setAuthModalOpen(false);
+  };
+
+  const handleAuthenticate = (authenticatedUser: User) => {
+    login(authenticatedUser);
+    setAuthModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col">
-      <Navbar />
+      <Navbar onNewGame={handleNewGame} onLogout={handleLogout} />
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="text-center mb-8">
@@ -30,7 +67,7 @@ export default function Home() {
             ⛓️ Aztec Word Hunt
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Find the target blockchain word within 5 minutes! Each successful find earns you 50 points.
+            Find the target word within 5 minutes! Each successful find earns you 50 points.
             Words can be in any direction - horizontal, vertical, or diagonal!
           </p>
         </div>
@@ -47,9 +84,9 @@ export default function Home() {
               timeRemaining={gameState.timeRemaining}
               isTimerRunning={timerState.isRunning}
               gameStatus={gameState.gameStatus}
-              onStartGame={startGame}
+              onStartGame={handleStartGame}
               onStopGame={stopGame}
-              onResetGame={resetGame}
+              onResetGame={handleNewGame}
             />
           </div>
           
@@ -59,12 +96,20 @@ export default function Home() {
               currentScore={gameState.score}
               roundsPlayed={gameState.roundsPlayed}
               gameStatus={gameState.gameStatus}
+              currentUser={user}
+              onUserUpdate={updateUserData}
             />
           </div>
         </div>
       </main>
       
       <Footer />
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={handleAuthModalClose}
+        onAuthenticate={handleAuthenticate}
+      />
     </div>
   );
 }

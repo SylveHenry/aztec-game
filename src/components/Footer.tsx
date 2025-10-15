@@ -13,8 +13,8 @@ const Footer: React.FC = () => {
               Aztec Word Hunt
             </h3>
             <p className="text-gray-300 text-sm">
-              Challenge your mind with our ancient-themed word search puzzles. 
-              Find hidden words in the grid and unlock the mysteries of the past.
+              Challenge your mind with our Aztec themed word hunt puzzle game. 
+              Find hidden Aztec terms in letter grids.
             </p>
           </div>
           

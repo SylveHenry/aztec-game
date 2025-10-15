@@ -3,7 +3,12 @@
 import React, { useState } from 'react';
 import InstructionsModal from './InstructionsModal';
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  onNewGame?: () => void;
+  onLogout?: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onNewGame, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
 
@@ -18,6 +23,16 @@ const Navbar: React.FC = () => {
 
   const closeInstructionsModal = () => {
     setIsInstructionsModalOpen(false);
+  };
+
+  const handleNewGame = () => {
+    if (onLogout) {
+      onLogout(); // Log out the current user first
+    }
+    if (onNewGame) {
+      onNewGame(); // Then trigger the new game flow
+    }
+    setIsMobileMenuOpen(false); // Close mobile menu when starting new game
   };
 
   return (
@@ -36,7 +51,10 @@ const Navbar: React.FC = () => {
             
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <button className="text-white hover:bg-amber-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                <button 
+                  onClick={handleNewGame}
+                  className="text-white hover:bg-amber-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
                   New Game
                 </button>
                 <button 
@@ -64,7 +82,10 @@ const Navbar: React.FC = () => {
           {isMobileMenuOpen && (
             <div className="md:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-amber-700 rounded-b-lg">
-                <button className="text-white hover:bg-amber-800 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors">
+                <button 
+                  onClick={handleNewGame}
+                  className="text-white hover:bg-amber-800 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors"
+                >
                   New Game
                 </button>
                 <button 
