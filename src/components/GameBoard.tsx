@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { GameState } from '@/types/game';
 
 interface GameBoardProps {
@@ -30,6 +30,22 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onResetGame
 }) => {
   const { grid, selectedCells, targetWordPositions } = gameState;
+  const gameBoardRef = useRef<HTMLDivElement>(null);
+
+  // Focus the game board when the game starts
+  useEffect(() => {
+    if (gameStatus === 'playing' && gameBoardRef.current) {
+      // Smooth scroll to the game board
+      gameBoardRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center'
+      });
+      
+      // Optional: Focus the game board for keyboard accessibility
+      gameBoardRef.current.focus();
+    }
+  }, [gameStatus]);
 
   const isCellSelected = (row: number, col: number): boolean => {
     return selectedCells.some(cell => cell.row === row && cell.col === col);
@@ -56,7 +72,11 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="flex flex-col items-center space-y-4 w-full">
-      <div className="bg-gradient-to-br from-amber-100 to-orange-100 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg w-full max-w-lg relative">
+      <div 
+        ref={gameBoardRef}
+        tabIndex={-1}
+        className="bg-gradient-to-br from-amber-100 to-orange-100 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg w-full max-w-lg xl:max-w-2xl relative outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+      >
         {/* Game Title with Target Word and Timer */}
         <div className="text-center mb-4 pb-4 border-b-2 border-amber-300">
           <div className="flex items-center justify-between mb-2">
