@@ -22,7 +22,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
           <ol className="list-decimal list-inside space-y-2">
             <li>Click <strong>&quot;🚀 Start Game&quot;</strong> to begin a new round</li>
             <li>Look at the <strong>target word</strong> displayed at the top of the game board</li>
-            <li>Find this specific word hidden in the 15x15 letter grid</li>
+            <li>Find this specific word hidden in the 10x10 letter grid</li>
             <li>Click and drag to select the target word in any direction</li>
             <li>Words can be horizontal, vertical, or diagonal (including backwards)</li>
             <li>Successfully finding the word earns you <strong>50 points</strong> and starts a new round</li>
@@ -33,7 +33,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">⏰ Time Limit</h3>
           <ul className="list-disc list-inside space-y-1">
-            <li>Each game session lasts exactly <strong>5 minutes (300 seconds)</strong></li>
+            <li>Each game session lasts exactly <strong>3 minutes (180 seconds)</strong></li>
             <li>The timer starts when you click &quot;Start Game&quot;</li>
             <li>Timer turns orange when under 10 seconds, red when under 5 seconds</li>
             <li>Game ends automatically when time runs out</li>

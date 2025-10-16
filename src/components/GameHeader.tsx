@@ -82,7 +82,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <div className="mb-4">
           <Timer 
             timeRemaining={timeRemaining} 
-            totalTime={300} 
+            totalTime={180} 
             isRunning={isTimerRunning} 
           />
         </div>
@@ -95,7 +95,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <div className="space-y-1">
             <div>• Click and drag to select the target word</div>
             <div>• Words can be horizontal, vertical, or diagonal</div>
-            <div>• Find the target word within 5 minutes to earn 50 points</div>
+            <div>• Find the target word within 3 minutes to earn 50 points</div>
             <div>• Ignore other words - only the target word counts!</div>
           </div>
         </div>

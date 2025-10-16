@@ -15,8 +15,8 @@ export const blockchainWords = [
   "CONSENSUS",
   "GAS",
   "CONTRACT",
-  "DECENTRALIZED",
-  "CRYPTOCURRENCY",
+  // "DECENTRALIZED", // 12 chars - filtered for 10x10 grid
+  // "CRYPTOCURRENCY", // 14 chars - filtered for 10x10 grid
   "NODE",
   "PRIVATE",
   "PUBLIC",
@@ -34,7 +34,7 @@ export const blockchainWords = [
   "AZTEC",
   "NETWORK",
   "NOIR",
-  "TRANSACTIONS",
+  // "TRANSACTIONS", // 12 chars - filtered for 10x10 grid
   "ZERO",
   "KNOWLEDGE",
   "CONTRACTS",
@@ -43,9 +43,9 @@ export const blockchainWords = [
   "DATA",
   "PRIVACY",
   "ACCOUNT",
-  "ABSTRACTION",
+  // "ABSTRACTION", // 11 chars - filtered for 10x10 grid
   "SANDBOX",
-  "ENVIRONMENT",
+  // "ENVIRONMENT", // 11 chars - filtered for 10x10 grid
   "TREE",
   "NOTE",
   "REGISTRY",
@@ -60,10 +60,10 @@ export const blockchainWords = [
   "MANAGEMENT",
   "EXPLORER",
   "MODEL",
-  "PROGRAMMABLE",
+  // "PROGRAMMABLE", // 12 chars - filtered for 10x10 grid
   "COMPOSABLE",
   "PLAYGROUND",
-  "DECENTRALIZATION",
+  // "DECENTRALIZATION", // 16 chars - filtered for 10x10 grid
   "NULLIFIERS",
   "NOTES",
   "BRIDGES",

@@ -19,7 +19,7 @@ const DIRECTIONS = [
   { name: 'diagonal-left-reverse', rowDelta: -1, colDelta: 1 } // Bottom-left to top-right
 ];
 
-const GRID_SIZE = 15;
+const GRID_SIZE = 10;
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // Generate random letter
@@ -27,9 +27,11 @@ function getRandomLetter(): string {
   return ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
 }
 
-// Get random word from wordlist
+// Get random word from wordlist (max 10 characters for 10x10 grid)
 function getRandomTargetWord(): string {
-  return blockchainWords[Math.floor(Math.random() * blockchainWords.length)];
+  // Filter words to only include those with 10 characters or less
+  const validWords = blockchainWords.filter(word => word.length <= 10);
+  return validWords[Math.floor(Math.random() * validWords.length)];
 }
 
 // Check if word can fit in grid at given position and direction
@@ -89,33 +91,62 @@ export function generateRandomGrid(): GridGenerationResult {
   // Get random target word
   const targetWord = getRandomTargetWord();
   
-  // Try to place the target word in a random position and direction
+  // Try to place the target word with truly random direction selection
   let targetWordPositions: Position[] = [];
   let placed = false;
   let attempts = 0;
   const maxAttempts = 1000;
   
   while (!placed && attempts < maxAttempts) {
-    const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
-    const startRow = Math.floor(Math.random() * GRID_SIZE);
-    const startCol = Math.floor(Math.random() * GRID_SIZE);
+    // Randomly shuffle all directions for each attempt
+    const shuffledDirections = [...DIRECTIONS].sort(() => Math.random() - 0.5);
     
-    if (canPlaceWord(grid, targetWord, startRow, startCol, direction)) {
-      targetWordPositions = placeWord(grid, targetWord, startRow, startCol, direction);
-      placed = true;
+    // Try each direction in random order
+    for (const direction of shuffledDirections) {
+      if (placed) break;
+      
+      // Try multiple random positions for this direction
+      for (let posAttempt = 0; posAttempt < 50; posAttempt++) {
+        const startRow = Math.floor(Math.random() * GRID_SIZE);
+        const startCol = Math.floor(Math.random() * GRID_SIZE);
+        
+        if (canPlaceWord(grid, targetWord, startRow, startCol, direction)) {
+          targetWordPositions = placeWord(grid, targetWord, startRow, startCol, direction);
+          placed = true;
+          break;
+        }
+      }
     }
-    
     attempts++;
   }
   
-  // If we couldn't place the word randomly, place it horizontally in the center
+  // If we still couldn't place the word, try a guaranteed diagonal placement
+  if (!placed) {
+    // Try diagonal placement from top-left corner
+    const direction = DIRECTIONS.find(d => d.name === 'diagonal')!;
+    const maxStartRow = GRID_SIZE - targetWord.length;
+    const maxStartCol = GRID_SIZE - targetWord.length;
+    
+    if (maxStartRow >= 0 && maxStartCol >= 0) {
+      const startRow = Math.floor(maxStartRow / 2);
+      const startCol = Math.floor(maxStartCol / 2);
+      
+      if (canPlaceWord(grid, targetWord, startRow, startCol, direction)) {
+        targetWordPositions = placeWord(grid, targetWord, startRow, startCol, direction);
+        placed = true;
+      }
+    }
+  }
+  
+  // Last resort: try horizontal in center (should work for most words in 10x10)
   if (!placed) {
     const startRow = Math.floor(GRID_SIZE / 2);
-    const startCol = Math.floor((GRID_SIZE - targetWord.length) / 2);
+    const startCol = Math.max(0, Math.floor((GRID_SIZE - targetWord.length) / 2));
     const direction = DIRECTIONS[0]; // horizontal
     
-    if (canPlaceWord(grid, targetWord, startRow, startCol, direction)) {
+    if (startCol + targetWord.length <= GRID_SIZE) {
       targetWordPositions = placeWord(grid, targetWord, startRow, startCol, direction);
+      placed = true;
     }
   }
   

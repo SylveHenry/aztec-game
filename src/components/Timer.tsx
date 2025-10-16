@@ -8,7 +8,7 @@ interface TimerProps {
   totalTime?: number;
 }
 
-const Timer: React.FC<TimerProps> = ({ timeRemaining, isRunning, totalTime = 300 }) => {
+const Timer: React.FC<TimerProps> = ({ timeRemaining, isRunning, totalTime = 180 }) => {
   const percentage = (timeRemaining / totalTime) * 100;
   const isLowTime = timeRemaining <= 5;
   const isVeryLowTime = timeRemaining <= 3;

@@ -52,6 +52,7 @@ export interface TimerState {
 export interface User {
   _id?: string;
   username: string;
+  usernameLower?: string;
   pin: string;
   highScore: number;
   totalRoundsPlayed: number;

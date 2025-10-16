@@ -46,8 +46,11 @@ export async function POST(request: NextRequest) {
     const usersCollection = db.collection('users');
 
     if (action === 'login') {
-      // Find existing user
-      const existingUser = await usersCollection.findOne({ username, pin });
+      // Find existing user using case-insensitive username
+      const existingUser = await usersCollection.findOne({ 
+        usernameLower: username.toLowerCase(), 
+        pin 
+      });
       
       if (!existingUser) {
         return NextResponse.json(
@@ -74,8 +77,10 @@ export async function POST(request: NextRequest) {
         }
       });
     } else if (action === 'register') {
-      // Check if username already exists
-      const existingUser = await usersCollection.findOne({ username });
+      // Check if username already exists (case-insensitive)
+      const existingUser = await usersCollection.findOne({ 
+        usernameLower: username.toLowerCase() 
+      });
       
       if (existingUser) {
         return NextResponse.json(
@@ -87,6 +92,7 @@ export async function POST(request: NextRequest) {
       // Create new user
       const newUser: Omit<User, '_id'> = {
         username,
+        usernameLower: username.toLowerCase(),
         pin,
         highScore: 0,
         totalRoundsPlayed: 0,
@@ -99,7 +105,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         user: {
           _id: result.insertedId.toString(),
-          ...newUser
+          username: newUser.username,
+          pin: newUser.pin,
+          highScore: newUser.highScore,
+          totalRoundsPlayed: newUser.totalRoundsPlayed,
+          createdAt: newUser.createdAt,
+          lastPlayedAt: newUser.lastPlayedAt
         }
       });
     } else {
