@@ -225,7 +225,6 @@ export const useNewWordCross = () => {
       setGameState(prev => ({
         ...prev,
         score: newScore,
-        roundsPlayed: prev.roundsPlayed + 1,
         selectedCells: [],
         feedbackMessage: 'Success!'
       }));
@@ -283,7 +282,6 @@ export const useNewWordCross = () => {
       setGameState(prev => ({
         ...prev,
         score: newScore,
-        roundsPlayed: prev.roundsPlayed + 1,
         selectedCells: [],
         feedbackMessage: 'Success!'
       }));
