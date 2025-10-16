@@ -20,6 +20,9 @@ export default function Home() {
     handleCellMouseDown,
     handleCellMouseEnter,
     handleCellMouseUp,
+    handleCellTouchStart,
+    handleCellTouchMove,
+    handleCellTouchEnd,
     startGame,
     stopGame,
     resetGame
@@ -80,6 +83,9 @@ export default function Home() {
               onCellMouseDown={handleCellMouseDown}
               onCellMouseEnter={handleCellMouseEnter}
               onCellMouseUp={handleCellMouseUp}
+              onCellTouchStart={handleCellTouchStart}
+              onCellTouchMove={handleCellTouchMove}
+              onCellTouchEnd={handleCellTouchEnd}
               targetWord={gameState.targetWord}
               timeRemaining={gameState.timeRemaining}
               isTimerRunning={timerState.isRunning}

@@ -246,12 +246,77 @@ export const useNewWordCross = () => {
     setSelectionStart(null);
   }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, gameState.roundsPlayed, checkTargetWordMatch, startNewRound, updateScore, user?.highScore]);
 
+  // Handle cell touch start
+  const handleCellTouchStart = useCallback((row: number, col: number) => {
+    if (gameState.gameStatus !== 'playing') return;
+    
+    setIsSelecting(true);
+    setSelectionStart({ row, col });
+    setGameState(prev => ({
+      ...prev,
+      selectedCells: [{ row, col }]
+    }));
+  }, [gameState.gameStatus]);
+
+  // Handle cell touch move
+  const handleCellTouchMove = useCallback((row: number, col: number) => {
+    if (!isSelecting || !selectionStart || gameState.gameStatus !== 'playing') return;
+
+    const newSelection = getSelectionPath(selectionStart, { row, col });
+    setGameState(prev => ({
+      ...prev,
+      selectedCells: newSelection
+    }));
+  }, [isSelecting, selectionStart, gameState.gameStatus, getSelectionPath]);
+
+  // Handle cell touch end
+  const handleCellTouchEnd = useCallback(() => {
+    if (!isSelecting || gameState.gameStatus !== 'playing') return;
+
+    // Check if selection matches target word
+    const isTargetWordFound = checkTargetWordMatch(gameState.selectedCells);
+
+    if (isTargetWordFound) {
+      // Award 50 points and show success message
+      const newScore = gameState.score + 50;
+      
+      setGameState(prev => ({
+        ...prev,
+        score: newScore,
+        selectedCells: [],
+        feedbackMessage: 'Success!'
+      }));
+      
+      // Only update score in database if it's a new high score
+      if (newScore > (user?.highScore || 0)) {
+        updateScore(newScore, gameState.roundsPlayed + 1);
+      }
+      
+      // Start new round after a brief delay
+      setTimeout(() => {
+        startNewRound();
+      }, 1500);
+    } else {
+      // Clear selection if not target word
+      setGameState(prev => ({
+        ...prev,
+        selectedCells: []
+      }));
+    }
+
+    setIsSelecting(false);
+    setSelectionStart(null);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, gameState.roundsPlayed, checkTargetWordMatch, startNewRound, updateScore, user?.highScore]);
+
   return {
     gameState,
     timerState: { timeRemaining, isRunning },
     handleCellMouseDown,
     handleCellMouseEnter,
     handleCellMouseUp,
+    handleCellTouchStart,
+    handleCellTouchMove,
+    handleCellTouchEnd,
     startGame,
     stopGame,
     resetGame,

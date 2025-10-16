@@ -8,6 +8,9 @@ interface GameBoardProps {
   onCellMouseDown: (row: number, col: number) => void;
   onCellMouseEnter: (row: number, col: number) => void;
   onCellMouseUp: () => void;
+  onCellTouchStart: (row: number, col: number) => void;
+  onCellTouchMove: (row: number, col: number) => void;
+  onCellTouchEnd: () => void;
   targetWord?: string;
   timeRemaining?: number;
   isTimerRunning?: boolean;
@@ -22,6 +25,9 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onCellMouseDown,
   onCellMouseEnter,
   onCellMouseUp,
+  onCellTouchStart,
+  onCellTouchMove,
+  onCellTouchEnd,
   targetWord,
   timeRemaining,
   gameStatus,
@@ -111,30 +117,55 @@ const GameBoard: React.FC<GameBoardProps> = ({
         {/* Game Grid with Overlay */}
         <div className="relative">
           <div 
-            className={`grid gap-0.5 sm:gap-1 w-full aspect-square transition-all duration-300 ${
+            className={`grid gap-0.5 sm:gap-1 w-full aspect-square transition-all duration-300 game-grid ${
               gameStatus === 'waiting' || gameState.feedbackMessage ? 'blur-sm' : ''
             }`}
             style={{ 
               gridTemplateColumns: `repeat(${grid[0]?.length || 0}, minmax(0, 1fr))`,
-              userSelect: 'none'
+              userSelect: 'none',
+              touchAction: 'none'
             }}
             onMouseUp={onCellMouseUp}
             onMouseLeave={onCellMouseUp}
+            onTouchEnd={onCellTouchEnd}
           >
             {grid.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <div
                   key={`${rowIndex}-${colIndex}`}
-                  className={getCellClassName(rowIndex, colIndex)}
+                  className={`${getCellClassName(rowIndex, colIndex)} game-cell`}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     onCellMouseDown(rowIndex, colIndex);
                   }}
                   onMouseEnter={() => onCellMouseEnter(rowIndex, colIndex)}
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    if (touch) {
+                      onCellTouchStart(rowIndex, colIndex);
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    if (touch) {
+                      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                      const cellElement = element?.closest('[data-row][data-col]') as HTMLElement;
+                      if (cellElement) {
+                        const touchRow = parseInt(cellElement.dataset.row || '0');
+                        const touchCol = parseInt(cellElement.dataset.col || '0');
+                        onCellTouchMove(touchRow, touchCol);
+                      }
+                    }
+                  }}
+                  data-row={rowIndex}
+                  data-col={colIndex}
                   style={{ 
                     WebkitUserSelect: 'none',
                     MozUserSelect: 'none',
-                    msUserSelect: 'none'
+                    msUserSelect: 'none',
+                    touchAction: 'none'
                   }}
                 >
                   {cell}
