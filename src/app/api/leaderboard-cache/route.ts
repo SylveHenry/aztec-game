@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     console.log('Leaderboard cache PUT request received');
-    const { userId, newScore, roundsPlayed } = await request.json();
-    console.log('PUT request data:', { userId, newScore, roundsPlayed });
+    const { userId, newScore, oldScore, roundsPlayed } = await request.json();
+    console.log('PUT request data:', { userId, newScore, oldScore, roundsPlayed });
 
     if (!userId || typeof newScore !== 'number' || typeof roundsPlayed !== 'number') {
       console.error('Invalid PUT request data:', { userId, newScore, roundsPlayed });
@@ -111,18 +111,21 @@ export async function PUT(request: NextRequest) {
 
     const userObjectId = new ObjectId(userId);
 
-    // Get user data
-    const user = await usersCollection.findOne({ _id: userObjectId });
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+    // Use the oldScore from the request if provided, otherwise get from database
+    let currentOldScore = oldScore;
+    if (typeof oldScore !== 'number') {
+      const user = await usersCollection.findOne({ _id: userObjectId });
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      currentOldScore = user.highScore || 0;
     }
 
-    const oldScore = user.highScore || 0;
-    const isNewHighScore = newScore > oldScore;
-    console.log('Score comparison:', { oldScore, newScore, isNewHighScore });
+    const isNewHighScore = newScore > currentOldScore;
+    console.log('Score comparison:', { oldScore: currentOldScore, newScore, isNewHighScore });
 
     if (!isNewHighScore) {
       console.log('No high score update needed, returning early');
@@ -136,16 +139,18 @@ export async function PUT(request: NextRequest) {
 
     console.log('Updating user score in users collection');
 
-    // Update user's score in users collection
-    await usersCollection.updateOne(
-      { _id: userObjectId },
-      { 
-        $set: { 
-          highScore: newScore,
-          lastPlayedAt: new Date()
+    // Update user's score in users collection (only if we don't have the user data already)
+    if (typeof oldScore !== 'number') {
+      await usersCollection.updateOne(
+        { _id: userObjectId },
+        { 
+          $set: { 
+            highScore: newScore,
+            lastPlayedAt: new Date()
+          }
         }
-      }
-    );
+      );
+    }
 
     // Get updated user data to ensure we have the correct totalRoundsPlayed
     const updatedUser = await usersCollection.findOne({ _id: userObjectId });
@@ -174,7 +179,7 @@ export async function PUT(request: NextRequest) {
       // Insert new entry (user's first score)
       await leaderboardCollection.insertOne({
         userId: userObjectId,
-        username: user.username,
+        username: updatedUser?.username || 'Unknown User',
         highScore: newScore,
         totalRoundsPlayed: currentTotalRounds,
         lastPlayedAt: new Date(),

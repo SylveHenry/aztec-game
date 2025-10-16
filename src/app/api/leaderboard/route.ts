@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
 // Helper function to rebuild leaderboard cache
 async function rebuildLeaderboardCache() {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/leaderboard-cache`, {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/leaderboard-cache`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'rebuild' })
@@ -173,12 +173,13 @@ export async function POST(request: NextRequest) {
     if (isNewHighScore) {
       try {
         console.log('Updating leaderboard cache for user:', userId, 'with score:', score);
-        const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/leaderboard-cache`, {
+        const response = await fetch(`${process.env.NEXTAUTH_URL}/api/leaderboard-cache`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             userId, 
             newScore: score, 
+            oldScore: user.highScore || 0,
             roundsPlayed: updateData.totalRoundsPlayed
           })
         });

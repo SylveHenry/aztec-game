@@ -50,7 +50,7 @@ export const useAuth = () => {
         const updatedUser = {
           ...authState.user,
           highScore: result.highScoreUpdated ? score : authState.user.highScore,
-          totalRoundsPlayed: roundsPlayed,
+          totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
           lastPlayedAt: new Date()
         };
         
