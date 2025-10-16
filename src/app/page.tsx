@@ -75,7 +75,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 mb-8">
           {/* Game Board - Takes up 2 columns on large screens */}
           <div className="lg:col-span-2 flex flex-col items-center w-full space-y-4">
             <GameBoard

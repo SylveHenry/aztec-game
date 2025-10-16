@@ -225,7 +225,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       )}
 
       {/* Leaderboard List */}
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {leaderboard.length === 0 ? (
           <div className="text-center text-gray-500 py-4">
             No scores yet. Be the first to play!
