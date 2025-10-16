@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     const updateData: Record<string, number | Date> = {
-      totalRoundsPlayed: roundsPlayed,
+      totalRoundsPlayed: (user.totalRoundsPlayed || 0) + roundsPlayed,
       lastPlayedAt: new Date()
     };
 
