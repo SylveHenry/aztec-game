@@ -92,11 +92,14 @@ export async function POST(request: NextRequest) {
 // Update single user's position in leaderboard cache
 export async function PUT(request: NextRequest) {
   try {
+    console.log('Leaderboard cache PUT request received');
     const { userId, newScore, roundsPlayed } = await request.json();
+    console.log('PUT request data:', { userId, newScore, roundsPlayed });
 
     if (!userId || typeof newScore !== 'number' || typeof roundsPlayed !== 'number') {
+      console.error('Invalid PUT request data:', { userId, newScore, roundsPlayed });
       return NextResponse.json(
-        { error: 'User ID, score, and rounds played are required' },
+        { error: 'Invalid request data' },
         { status: 400 }
       );
     }
@@ -119,8 +122,10 @@ export async function PUT(request: NextRequest) {
 
     const oldScore = user.highScore || 0;
     const isNewHighScore = newScore > oldScore;
+    console.log('Score comparison:', { oldScore, newScore, isNewHighScore });
 
     if (!isNewHighScore) {
+      console.log('No high score update needed, returning early');
       // No leaderboard update needed
       return NextResponse.json({
         success: true,
@@ -129,50 +134,60 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    console.log('Updating user score in users collection');
+
     // Update user's score in users collection
     await usersCollection.updateOne(
       { _id: userObjectId },
       { 
         $set: { 
           highScore: newScore,
-          totalRoundsPlayed: roundsPlayed,
           lastPlayedAt: new Date()
         }
       }
     );
 
+    // Get updated user data to ensure we have the correct totalRoundsPlayed
+    const updatedUser = await usersCollection.findOne({ _id: userObjectId });
+    const currentTotalRounds = updatedUser?.totalRoundsPlayed || roundsPlayed;
+
     // Find current position in leaderboard
     const existingEntry = await leaderboardCollection.findOne({ userId: userObjectId });
+    console.log('Existing leaderboard entry:', existingEntry ? 'found' : 'not found');
     
     if (existingEntry) {
+      console.log('Updating existing leaderboard entry');
       // Update existing entry
       await leaderboardCollection.updateOne(
         { userId: userObjectId },
         { 
           $set: { 
             highScore: newScore,
-            totalRoundsPlayed: roundsPlayed,
+            totalRoundsPlayed: currentTotalRounds,
             lastPlayedAt: new Date(),
             updatedAt: new Date()
           }
         }
       );
     } else {
+      console.log('Inserting new leaderboard entry');
       // Insert new entry (user's first score)
       await leaderboardCollection.insertOne({
         userId: userObjectId,
         username: user.username,
         highScore: newScore,
-        totalRoundsPlayed: roundsPlayed,
+        totalRoundsPlayed: currentTotalRounds,
         lastPlayedAt: new Date(),
         rank: 0, // Will be updated in rerank
         updatedAt: new Date()
       });
     }
 
+    console.log('Re-ranking leaderboard entries');
     // Rerank all entries
     await rerankLeaderboard(leaderboardCollection);
 
+    console.log('Leaderboard cache update completed successfully');
     return NextResponse.json({
       success: true,
       highScoreUpdated: true,

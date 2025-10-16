@@ -172,18 +172,23 @@ export async function POST(request: NextRequest) {
     // Update leaderboard cache if it's a new high score
     if (isNewHighScore) {
       try {
+        console.log('Updating leaderboard cache for user:', userId, 'with score:', score);
         const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/leaderboard-cache`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             userId, 
             newScore: score, 
-            roundsPlayed 
+            roundsPlayed: updateData.totalRoundsPlayed
           })
         });
         
         if (!response.ok) {
-          console.error('Failed to update leaderboard cache');
+          const errorText = await response.text();
+          console.error('Failed to update leaderboard cache:', response.status, errorText);
+        } else {
+          const result = await response.json();
+          console.log('Leaderboard cache update result:', result);
         }
       } catch (error) {
         console.error('Error updating leaderboard cache:', error);

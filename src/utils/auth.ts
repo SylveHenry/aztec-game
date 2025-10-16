@@ -89,9 +89,26 @@ export const updateUserScore = async (
 
 export const fetchLeaderboard = async (userId?: string): Promise<{ leaderboard?: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }[]; userPosition?: { rank: number; score: number; isInTop20: boolean }; error?: string }> => {
   try {
-    const url = userId ? `/api/leaderboard?userId=${userId}` : '/api/leaderboard';
-    const response = await fetch(url);
+    // Add cache-busting timestamp to prevent browser caching
+    const timestamp = Date.now();
+    const baseUrl = userId ? `/api/leaderboard?userId=${userId}` : '/api/leaderboard';
+    const separator = userId ? '&' : '?';
+    const url = `${baseUrl}${separator}_t=${timestamp}`;
+    
+    console.log('🌐 Fetching leaderboard from URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
+    console.log('📡 Response status:', response.status);
     const data = await response.json();
+    console.log('📦 Response data:', data);
 
     if (!response.ok) {
       return { error: data.error || 'Failed to fetch leaderboard' };

@@ -44,7 +44,13 @@ export const useNewWordCross = () => {
       setGameState(prev => {
         // Save final score to database when time runs out
         if (prev.score > 0) {
-          updateScore(prev.score, prev.roundsPlayed).catch(error => {
+          updateScore(prev.score, prev.roundsPlayed).then(result => {
+            if (!result.success) {
+              console.error('Failed to update score on time up:', result.error);
+            } else {
+              console.log('Score successfully saved on time up:', result);
+            }
+          }).catch(error => {
             console.error('Failed to update score on time up:', error);
           });
         }
@@ -106,7 +112,13 @@ export const useNewWordCross = () => {
     setGameState(prev => {
       // Save final score to database when manually stopped
       if (prev.score > 0) {
-        updateScore(prev.score, prev.roundsPlayed).catch(error => {
+        updateScore(prev.score, prev.roundsPlayed).then(result => {
+          if (!result.success) {
+            console.error('Failed to update score on manual stop:', result.error);
+          } else {
+            console.log('Score successfully saved on manual stop:', result);
+          }
+        }).catch(error => {
           console.error('Failed to update score on manual stop:', error);
         });
       }

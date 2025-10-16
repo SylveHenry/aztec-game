@@ -52,9 +52,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 
   const loadLeaderboard = useCallback(async () => {
     try {
+      console.log('🔄 Loading leaderboard data...');
       setIsLoading(true);
       const userId = currentUser?._id;
+      console.log('👤 Current user ID:', userId);
       const response = await fetchLeaderboard(userId);
+      
+      console.log('📊 Leaderboard API response:', response);
       
       if (response.error) {
         console.error('Leaderboard error:', response.error);
@@ -63,6 +67,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       }
 
       if (response.leaderboard) {
+        console.log('📋 Raw leaderboard data:', response.leaderboard);
         // Convert database users to leaderboard entries
         const entries: LeaderboardEntry[] = response.leaderboard.map((user: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }) => ({
           id: user.id,
@@ -72,8 +77,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
           timestamp: new Date(user.timestamp).getTime()
         }));
         
+        console.log('✅ Formatted leaderboard entries:', entries);
         setLeaderboard(entries);
         setUserPosition(response.userPosition || null);
+        console.log('🎯 User position:', response.userPosition);
         
         // Check if current user's high score needs to be updated
         if (currentUser && onUserUpdate && response.userPosition) {
@@ -99,9 +106,13 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('🚀 Initial leaderboard load triggered');
         setIsLoading(true);
         const userId = currentUser?._id;
+        console.log('👤 Current user ID:', userId);
         const response = await fetchLeaderboard(userId);
+        
+        console.log('📊 Initial leaderboard API response:', response);
         
         if (response.error) {
           console.error('Leaderboard error:', response.error);
@@ -110,6 +121,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
         }
 
         if (response.leaderboard) {
+          console.log('📋 Initial raw leaderboard data:', response.leaderboard);
           // Convert database users to leaderboard entries
           const entries: LeaderboardEntry[] = response.leaderboard.map((user: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }) => ({
             id: user.id,
@@ -119,8 +131,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
             timestamp: new Date(user.timestamp).getTime()
           }));
           
+          console.log('✅ Initial formatted leaderboard entries:', entries);
           setLeaderboard(entries);
           setUserPosition(response.userPosition || null);
+          console.log('🎯 Initial user position:', response.userPosition);
           
           // Check if current user's high score needs to be updated
           if (currentUser && onUserUpdate && response.userPosition) {
@@ -149,8 +163,10 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   // Refresh leaderboard when game ends and user is authenticated
   useEffect(() => {
     if (gameStatus === 'gameOver' && currentUser) {
+      console.log('🎮 Game over detected, refreshing leaderboard in 1 second...');
       // Small delay to ensure score update has been processed
       setTimeout(() => {
+        console.log('⏰ Timeout completed, loading leaderboard...');
         loadLeaderboard();
       }, 1000);
     }

@@ -45,11 +45,11 @@ export const useAuth = () => {
     try {
       const result = await updateUserScore(authState.user._id!, score, roundsPlayed);
       
-      if (result.success && result.highScoreUpdated) {
-        // Update local user data if high score was updated
+      if (result.success) {
+        // Always update local user data when score update is successful
         const updatedUser = {
           ...authState.user,
-          highScore: score,
+          highScore: result.highScoreUpdated ? score : authState.user.highScore,
           totalRoundsPlayed: roundsPlayed,
           lastPlayedAt: new Date()
         };
