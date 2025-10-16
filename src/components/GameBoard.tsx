@@ -108,7 +108,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
                   timeRemaining <= 10 ? 'bg-orange-500' : 
                   'bg-green-500'
                 }`}
-                style={{ width: `${(timeRemaining / 120) * 100}%` }}
+                style={{ width: `${(timeRemaining / 30) * 100}%` }}
               />
             </div>
           )}

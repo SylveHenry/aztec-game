@@ -110,7 +110,7 @@ const GameControls: React.FC<GameControlsProps> = ({
       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="text-xs font-semibold text-blue-800 mb-2">⚡ Quick Tips</h4>
         <ul className="text-xs text-blue-700 space-y-1">
-          <li>• Each round lasts 2 minutes</li>
+          <li>• Each round lasts 30 seconds</li>
           <li>• Target word = 50 points</li>
           <li>• Game continues until time runs out</li>
           <li>• Beat your high score!</li>

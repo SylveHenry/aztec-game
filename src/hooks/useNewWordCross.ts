@@ -7,7 +7,7 @@ import { useTimer } from './useTimer';
 import { useAuth } from './useAuth';
 
 export const useNewWordCross = () => {
-  const { updateScore, user } = useAuth();
+  const { updateScore } = useAuth();
   
   const [gameState, setGameState] = useState<GameState>(() => {
     const initialRound = generateNewRound();
@@ -17,7 +17,7 @@ export const useNewWordCross = () => {
       targetWordPositions: initialRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 120,
+      timeRemaining: 30,
       gameStatus: 'waiting',
       roundsPlayed: 0,
       feedbackMessage: undefined
@@ -28,7 +28,7 @@ export const useNewWordCross = () => {
   const [selectionStart, setSelectionStart] = useState<Position | null>(null);
 
   // Timer hook
-  const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(120);
+  const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(30);
 
   // Update game state time remaining when timer changes
   useEffect(() => {
@@ -42,9 +42,11 @@ export const useNewWordCross = () => {
   useEffect(() => {
     setOnTimeUp(() => {
       setGameState(prev => {
-        // Save final score to database when time runs out (don't count current incomplete round)
-        if (prev.score > (user?.highScore || 0)) {
-          updateScore(prev.score, prev.roundsPlayed);
+        // Save final score to database when time runs out
+        if (prev.score > 0) {
+          updateScore(prev.score, prev.roundsPlayed).catch(error => {
+            console.error('Failed to update score on time up:', error);
+          });
         }
         
         return {
@@ -62,7 +64,7 @@ export const useNewWordCross = () => {
         }));
       }, 2000);
     });
-  }, [setOnTimeUp, updateScore, user?.highScore]);
+  }, [setOnTimeUp, updateScore]);
 
   // Start a new game
   const startGame = useCallback(() => {
@@ -73,12 +75,12 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 120,
+      timeRemaining: 30,
       gameStatus: 'playing',
       roundsPlayed: 1,
       feedbackMessage: undefined
     });
-    resetTimer(120);
+    resetTimer(30);
     startTimer();
   }, [resetTimer, startTimer]);
 
@@ -94,7 +96,7 @@ export const useNewWordCross = () => {
       roundsPlayed: prev.roundsPlayed + 1,
       feedbackMessage: undefined
     }));
-    resetTimer(120);
+    resetTimer(30);
     startTimer();
   }, [resetTimer, startTimer]);
 
@@ -102,9 +104,11 @@ export const useNewWordCross = () => {
   const stopGame = useCallback(() => {
     stopTimer();
     setGameState(prev => {
-      // Save final score to database when manually stopped (don't count current incomplete round)
-      if (prev.score > (user?.highScore || 0)) {
-        updateScore(prev.score, prev.roundsPlayed);
+      // Save final score to database when manually stopped
+      if (prev.score > 0) {
+        updateScore(prev.score, prev.roundsPlayed).catch(error => {
+          console.error('Failed to update score on manual stop:', error);
+        });
       }
       
       return {
@@ -112,7 +116,7 @@ export const useNewWordCross = () => {
         gameStatus: 'gameOver'
       };
     });
-  }, [stopTimer, updateScore, user?.highScore]);
+  }, [stopTimer, updateScore]);
 
   // Reset the game
   const resetGame = useCallback(() => {
@@ -123,12 +127,12 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 120,
+      timeRemaining: 30,
       gameStatus: 'waiting',
       roundsPlayed: 0,
       feedbackMessage: undefined
     });
-    resetTimer(120);
+    resetTimer(30);
   }, [resetTimer]);
 
   // Get selection path between two positions
@@ -221,14 +225,10 @@ export const useNewWordCross = () => {
       setGameState(prev => ({
         ...prev,
         score: newScore,
+        roundsPlayed: prev.roundsPlayed + 1,
         selectedCells: [],
         feedbackMessage: 'Success!'
       }));
-      
-      // Only update score in database if it's a new high score
-      if (newScore > (user?.highScore || 0)) {
-        updateScore(newScore, gameState.roundsPlayed + 1);
-      }
       
       // Start new round after a brief delay
       setTimeout(() => {
@@ -244,7 +244,7 @@ export const useNewWordCross = () => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, gameState.roundsPlayed, checkTargetWordMatch, startNewRound, updateScore, user?.highScore]);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound]);
 
   // Handle cell touch start
   const handleCellTouchStart = useCallback((row: number, col: number) => {
@@ -283,14 +283,10 @@ export const useNewWordCross = () => {
       setGameState(prev => ({
         ...prev,
         score: newScore,
+        roundsPlayed: prev.roundsPlayed + 1,
         selectedCells: [],
         feedbackMessage: 'Success!'
       }));
-      
-      // Only update score in database if it's a new high score
-      if (newScore > (user?.highScore || 0)) {
-        updateScore(newScore, gameState.roundsPlayed + 1);
-      }
       
       // Start new round after a brief delay
       setTimeout(() => {
@@ -306,7 +302,7 @@ export const useNewWordCross = () => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, gameState.roundsPlayed, checkTargetWordMatch, startNewRound, updateScore, user?.highScore]);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound]);
 
   return {
     gameState,
