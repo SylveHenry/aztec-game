@@ -66,7 +66,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
           <ul className="list-disc list-inside space-y-1">
             <li><strong>Mouse:</strong> Click and drag to select the target word</li>
             <li><strong>Touch:</strong> Tap and drag on mobile devices</li>
-            <li><strong>Start Game:</strong> Begin a new 5-minute game session</li>
+            <li><strong>Start Game:</strong> Begin a new 3-minute game session</li>
             <li><strong>Stop Game:</strong> End the current game early</li>
             <li><strong>Play Again:</strong> Start a fresh game after completion</li>
           </ul>
