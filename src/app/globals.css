@@ -57,6 +57,11 @@ body {
   }
 }
 
+/* Responsive font sizing for game cells */
+.game-cell {
+  font-size: clamp(12px, 3vw, 24px);
+}
+
 /* Prevent text selection and improve touch handling */
 .game-grid {
   -webkit-touch-callout: none;
@@ -68,7 +73,7 @@ body {
   touch-action: none;
 }
 
-/* Improve scrolling on mobile */
+/* Improve scrolling on mobile and enhance game board responsiveness */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
@@ -78,5 +83,54 @@ body {
   .game-container {
     padding: 8px;
     max-width: 100vw;
+  }
+  
+  /* Improve game board scaling on small screens */
+  .game-board-container {
+    max-width: min(100vw - 32px, 400px);
+    margin: 0 auto;
+  }
+  
+  /* Ensure cells maintain proper aspect ratio and don't get too small */
+  .game-cell {
+    min-height: 32px;
+    min-width: 32px;
+    font-size: clamp(10px, 2.5vw, 16px);
+  }
+  
+  /* Adjust grid gap for smaller screens */
+  .game-grid {
+    gap: 1px;
+  }
+}
+
+/* Extra small screens (phones in portrait) */
+@media (max-width: 480px) {
+  .game-board-container {
+    max-width: min(100vw - 16px, 350px);
+    padding: 8px;
+  }
+  
+  .game-cell {
+    min-height: 28px;
+    min-width: 28px;
+    font-size: clamp(8px, 2.2vw, 14px);
+  }
+  
+  /* Reduce padding on very small screens */
+  .game-board-wrapper {
+    padding: 12px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+  .game-board-container {
+    max-width: min(70vh, 400px);
+    max-height: 70vh;
+  }
+  
+  .game-cell {
+    font-size: clamp(8px, 1.8vh, 14px);
   }
 }

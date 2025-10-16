@@ -62,7 +62,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   const getCellClassName = (row: number, col: number): string => {
-    const baseClasses = "aspect-square border-2 border-amber-300 flex items-center justify-center font-bold cursor-pointer select-none transition-all duration-200 text-xs sm:text-sm md:text-base lg:text-lg";
+    const baseClasses = "aspect-square border-2 border-amber-300 flex items-center justify-center font-bold cursor-pointer select-none transition-all duration-200 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl";
     
     if (isCellSelected(row, col)) {
       return `${baseClasses} bg-blue-500 text-white border-blue-600 transform scale-105`;
@@ -77,11 +77,11 @@ const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4 w-full">
+    <div className="flex flex-col items-center space-y-4 w-full game-board-container">
       <div 
         ref={gameBoardRef}
         tabIndex={-1}
-        className="bg-gradient-to-br from-amber-100 to-orange-100 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg w-full max-w-lg xl:max-w-2xl relative outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        className="bg-gradient-to-br from-amber-100 to-orange-100 p-3 sm:p-4 md:p-6 rounded-xl shadow-lg w-full max-w-lg xl:max-w-2xl relative outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 game-board-wrapper"
       >
         {/* Game Title with Target Word and Timer */}
         <div className="text-center mb-4 pb-4 border-b-2 border-amber-300">
@@ -108,7 +108,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
                   timeRemaining <= 10 ? 'bg-orange-500' : 
                   'bg-green-500'
                 }`}
-                style={{ width: `${(timeRemaining / 180) * 100}%` }}
+                style={{ width: `${(timeRemaining / 120) * 100}%` }}
               />
             </div>
           )}

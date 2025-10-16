@@ -17,7 +17,7 @@ export const useNewWordCross = () => {
       targetWordPositions: initialRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 180,
+      timeRemaining: 120,
       gameStatus: 'waiting',
       roundsPlayed: 0,
       feedbackMessage: undefined
@@ -28,7 +28,7 @@ export const useNewWordCross = () => {
   const [selectionStart, setSelectionStart] = useState<Position | null>(null);
 
   // Timer hook
-  const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(180);
+  const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(120);
 
   // Update game state time remaining when timer changes
   useEffect(() => {
@@ -73,12 +73,12 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 180,
+      timeRemaining: 120,
       gameStatus: 'playing',
       roundsPlayed: 1,
       feedbackMessage: undefined
     });
-    resetTimer(180);
+    resetTimer(120);
     startTimer();
   }, [resetTimer, startTimer]);
 
@@ -94,7 +94,7 @@ export const useNewWordCross = () => {
       roundsPlayed: prev.roundsPlayed + 1,
       feedbackMessage: undefined
     }));
-    resetTimer(180);
+    resetTimer(120);
     startTimer();
   }, [resetTimer, startTimer]);
 
@@ -123,12 +123,12 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 180,
+      timeRemaining: 120,
       gameStatus: 'waiting',
       roundsPlayed: 0,
       feedbackMessage: undefined
     });
-    resetTimer(180);
+    resetTimer(120);
   }, [resetTimer]);
 
   // Get selection path between two positions
