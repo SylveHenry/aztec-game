@@ -5,6 +5,11 @@ import { User } from '@/types/game';
 const uri = process.env.MONGODB_URI!;
 const dbName = process.env.DATABASE_NAME!;
 
+// Extend the global type to include our MongoDB client promise
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
+}
+
 let client: MongoClient;
 
 if (!global._mongoClientPromise) {

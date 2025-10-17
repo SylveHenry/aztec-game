@@ -20,6 +20,8 @@ export interface GameState {
   gameStatus: 'waiting' | 'playing' | 'paused' | 'gameOver';
   roundsPlayed: number;
   feedbackMessage?: string;
+  hintShown: boolean;
+  hintPosition?: Position;
 }
 
 export interface WordData {
@@ -33,14 +35,6 @@ export interface GameData {
   difficulty: string;
   grid: string[][];
   words: WordData[];
-}
-
-export interface LeaderboardEntry {
-  id: string;
-  playerName: string;
-  score: number;
-  roundsPlayed: number;
-  timestamp: number;
 }
 
 export interface TimerState {

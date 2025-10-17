@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { TimerState } from '@/types/game';
 
-export const useTimer = (initialTime: number = 30) => {
+export const useTimer = (initialTime: number = 60) => {
   const [timerState, setTimerState] = useState<TimerState>({
     timeRemaining: initialTime,
     isRunning: false

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { User } from '@/types/game';
-import { fetchLeaderboard } from '@/utils/auth';
 
 interface LeaderboardEntry {
   id: string;
@@ -31,10 +30,12 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   roundsPlayed, 
   gameStatus,
   currentUser,
-  onUserUpdate
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  onUserUpdate: _onUserUpdate
 }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [userPosition, _setUserPosition] = useState<UserPosition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadLocalLeaderboard = useCallback(() => {
@@ -52,113 +53,33 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
 
   const loadLeaderboard = useCallback(async () => {
     try {
-      console.log('🔄 Loading leaderboard data...');
+      console.log('🔄 Loading leaderboard data from localStorage...');
       setIsLoading(true);
-      const userId = currentUser?._id;
-      console.log('👤 Current user ID:', userId);
-      const response = await fetchLeaderboard(userId);
-      
-      console.log('📊 Leaderboard API response:', response);
-      
-      if (response.error) {
-        console.error('Leaderboard error:', response.error);
-        loadLocalLeaderboard();
-        return;
-      }
-
-      if (response.leaderboard) {
-        console.log('📋 Raw leaderboard data:', response.leaderboard);
-        // Convert database users to leaderboard entries
-        const entries: LeaderboardEntry[] = response.leaderboard.map((user: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }) => ({
-          id: user.id,
-          playerName: user.playerName,
-          score: user.score,
-          roundsPlayed: user.roundsPlayed,
-          timestamp: new Date(user.timestamp).getTime()
-        }));
-        
-        console.log('✅ Formatted leaderboard entries:', entries);
-        setLeaderboard(entries);
-        setUserPosition(response.userPosition || null);
-        console.log('🎯 User position:', response.userPosition);
-        
-        // Check if current user's high score needs to be updated
-        if (currentUser && onUserUpdate && response.userPosition) {
-          const leaderboardHighScore = response.userPosition.score;
-          if (leaderboardHighScore !== currentUser.highScore) {
-            const updatedUser = {
-              ...currentUser,
-              highScore: leaderboardHighScore
-            };
-            onUserUpdate(updatedUser);
-          }
-        }
-      }
+      loadLocalLeaderboard();
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
-      // Fallback to localStorage if API fails
-      loadLocalLeaderboard();
+      setLeaderboard([]);
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser, loadLocalLeaderboard, onUserUpdate]);
+  }, [loadLocalLeaderboard]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         console.log('🚀 Initial leaderboard load triggered');
         setIsLoading(true);
-        const userId = currentUser?._id;
-        console.log('👤 Current user ID:', userId);
-        const response = await fetchLeaderboard(userId);
-        
-        console.log('📊 Initial leaderboard API response:', response);
-        
-        if (response.error) {
-          console.error('Leaderboard error:', response.error);
-          loadLocalLeaderboard();
-          return;
-        }
-
-        if (response.leaderboard) {
-          console.log('📋 Initial raw leaderboard data:', response.leaderboard);
-          // Convert database users to leaderboard entries
-          const entries: LeaderboardEntry[] = response.leaderboard.map((user: { id: string; playerName: string; score: number; roundsPlayed: number; timestamp: string | Date }) => ({
-            id: user.id,
-            playerName: user.playerName,
-            score: user.score,
-            roundsPlayed: user.roundsPlayed,
-            timestamp: new Date(user.timestamp).getTime()
-          }));
-          
-          console.log('✅ Initial formatted leaderboard entries:', entries);
-          setLeaderboard(entries);
-          setUserPosition(response.userPosition || null);
-          console.log('🎯 Initial user position:', response.userPosition);
-          
-          // Check if current user's high score needs to be updated
-          if (currentUser && onUserUpdate && response.userPosition) {
-            const leaderboardHighScore = response.userPosition.score;
-            if (leaderboardHighScore !== currentUser.highScore) {
-              const updatedUser = {
-                ...currentUser,
-                highScore: leaderboardHighScore
-              };
-              onUserUpdate(updatedUser);
-            }
-          }
-        }
+        loadLocalLeaderboard();
       } catch (error) {
         console.error('Failed to load leaderboard:', error);
-        // Fallback to localStorage if API fails
-        loadLocalLeaderboard();
+        setLeaderboard([]);
       } finally {
         setIsLoading(false);
       }
     };
     
     loadData();
-  }, [currentUser, loadLocalLeaderboard, onUserUpdate]);
+  }, [loadLocalLeaderboard]);
 
   // Refresh leaderboard when game ends and user is authenticated
   useEffect(() => {

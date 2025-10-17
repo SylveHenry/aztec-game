@@ -70,7 +70,7 @@ export default function Home() {
             ⛓️ Aztec Word Hunt
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Find the target word within 30 seconds! Each successful find earns you 50 points.
+            Find the target word within 60 seconds! Each successful find earns you 50 points.
             Words can be in any direction - horizontal, vertical, or diagonal!
           </p>
         </div>

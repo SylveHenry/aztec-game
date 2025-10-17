@@ -5,6 +5,7 @@ import { GameState, Position } from '@/types/game';
 import { generateNewRound } from '@/data/randomGridGenerator';
 import { useTimer } from './useTimer';
 import { useAuth } from './useAuth';
+import { getRandomDidYouKnowFact } from '@/data/didYouKnow';
 
 export const useNewWordCross = () => {
   const { updateScore } = useAuth();
@@ -17,10 +18,12 @@ export const useNewWordCross = () => {
       targetWordPositions: initialRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 30,
+      timeRemaining: 60,
       gameStatus: 'waiting',
       roundsPlayed: 0,
-      feedbackMessage: undefined
+      feedbackMessage: undefined,
+      hintShown: false,
+      hintPosition: undefined
     };
   });
 
@@ -28,7 +31,7 @@ export const useNewWordCross = () => {
   const [selectionStart, setSelectionStart] = useState<Position | null>(null);
 
   // Timer hook
-  const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(30);
+  const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(60);
 
   // Update game state time remaining when timer changes
   useEffect(() => {
@@ -38,37 +41,52 @@ export const useNewWordCross = () => {
     }));
   }, [timeRemaining]);
 
+  // Handle hint when 10 seconds remain
+  useEffect(() => {
+    if (timeRemaining === 10 && !gameState.hintShown && gameState.gameStatus === 'playing') {
+      // Select a random character from the target word to highlight
+      const randomIndex = Math.floor(Math.random() * gameState.targetWordPositions.length);
+      const hintPosition = gameState.targetWordPositions[randomIndex];
+      
+      setGameState(prev => ({
+        ...prev,
+        hintShown: true,
+        hintPosition: hintPosition
+      }));
+    }
+  }, [timeRemaining, gameState.hintShown, gameState.gameStatus, gameState.targetWordPositions]);
+
   // Handle time up
   useEffect(() => {
     setOnTimeUp(() => {
       setGameState(prev => {
-        // Save final score to database when time runs out
+        // Update local score when time runs out
         if (prev.score > 0) {
           updateScore(prev.score, prev.roundsPlayed).then(result => {
             if (!result.success) {
-              console.error('Failed to update score on time up:', result.error);
+              console.error('Failed to update local score on time up:', result.error);
             } else {
-              console.log('Score successfully saved on time up:', result);
+              console.log('Local score successfully updated on time up:', result);
             }
           }).catch(error => {
-            console.error('Failed to update score on time up:', error);
+            console.error('Failed to update local score on time up:', error);
           });
         }
         
         return {
           ...prev,
           gameStatus: 'gameOver',
-          feedbackMessage: 'Time Up!'
+          feedbackMessage: `Time Up! ${getRandomDidYouKnowFact()}`
         };
       });
       
-      // Clear the feedback message after 2 seconds to show target word highlighting
+      // Clear the feedback message after 5 seconds to show target word highlighting
       setTimeout(() => {
         setGameState(prev => ({
           ...prev,
           feedbackMessage: undefined
         }));
-      }, 2000);
+      }, 5000);
     });
   }, [setOnTimeUp, updateScore]);
 
@@ -81,12 +99,14 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 30,
+      timeRemaining: 60,
       gameStatus: 'playing',
       roundsPlayed: 1,
-      feedbackMessage: undefined
+      feedbackMessage: undefined,
+      hintShown: false,
+      hintPosition: undefined
     });
-    resetTimer(30);
+    resetTimer(60);
     startTimer();
   }, [resetTimer, startTimer]);
 
@@ -100,9 +120,11 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       roundsPlayed: prev.roundsPlayed + 1,
-      feedbackMessage: undefined
+      feedbackMessage: undefined,
+      hintShown: false,
+      hintPosition: undefined
     }));
-    resetTimer(30);
+    resetTimer(60);
     startTimer();
   }, [resetTimer, startTimer]);
 
@@ -110,16 +132,16 @@ export const useNewWordCross = () => {
   const stopGame = useCallback(() => {
     stopTimer();
     setGameState(prev => {
-      // Save final score to database when manually stopped
+      // Update local score when manually stopped
       if (prev.score > 0) {
         updateScore(prev.score, prev.roundsPlayed).then(result => {
           if (!result.success) {
-            console.error('Failed to update score on manual stop:', result.error);
+            console.error('Failed to update local score on manual stop:', result.error);
           } else {
-            console.log('Score successfully saved on manual stop:', result);
+            console.log('Local score successfully updated on manual stop:', result);
           }
         }).catch(error => {
-          console.error('Failed to update score on manual stop:', error);
+          console.error('Failed to update local score on manual stop:', error);
         });
       }
       
@@ -139,12 +161,14 @@ export const useNewWordCross = () => {
       targetWordPositions: newRound.targetWordPositions,
       selectedCells: [],
       score: 0,
-      timeRemaining: 30,
+      timeRemaining: 60,
       gameStatus: 'waiting',
       roundsPlayed: 0,
-      feedbackMessage: undefined
+      feedbackMessage: undefined,
+      hintShown: false,
+      hintPosition: undefined
     });
-    resetTimer(30);
+    resetTimer(60);
   }, [resetTimer]);
 
   // Get selection path between two positions
@@ -231,6 +255,9 @@ export const useNewWordCross = () => {
     const isTargetWordFound = checkTargetWordMatch(gameState.selectedCells);
 
     if (isTargetWordFound) {
+      // Stop the timer immediately when word is found
+      stopTimer();
+      
       // Award 50 points and show success message
       const newScore = gameState.score + 50;
       
@@ -238,13 +265,13 @@ export const useNewWordCross = () => {
         ...prev,
         score: newScore,
         selectedCells: [],
-        feedbackMessage: 'Success!'
+        feedbackMessage: `Success! ${getRandomDidYouKnowFact()}`
       }));
       
-      // Start new round after a brief delay
+      // Start new round after showing success message for 4 seconds
       setTimeout(() => {
         startNewRound();
-      }, 1500);
+      }, 4000);
     } else {
       // Clear selection if not target word
       setGameState(prev => ({
@@ -255,7 +282,7 @@ export const useNewWordCross = () => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound]);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound, stopTimer]);
 
   // Handle cell touch start
   const handleCellTouchStart = useCallback((row: number, col: number) => {
@@ -288,6 +315,9 @@ export const useNewWordCross = () => {
     const isTargetWordFound = checkTargetWordMatch(gameState.selectedCells);
 
     if (isTargetWordFound) {
+      // Stop the timer immediately when word is found
+      stopTimer();
+      
       // Award 50 points and show success message
       const newScore = gameState.score + 50;
       
@@ -295,13 +325,13 @@ export const useNewWordCross = () => {
         ...prev,
         score: newScore,
         selectedCells: [],
-        feedbackMessage: 'Success!'
+        feedbackMessage: `Success! ${getRandomDidYouKnowFact()}`
       }));
       
-      // Start new round after a brief delay
+      // Start new round after showing success message for 4 seconds
       setTimeout(() => {
         startNewRound();
-      }, 1500);
+      }, 4000);
     } else {
       // Clear selection if not target word
       setGameState(prev => ({
@@ -312,7 +342,7 @@ export const useNewWordCross = () => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound]);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound, stopTimer]);
 
   return {
     gameState,

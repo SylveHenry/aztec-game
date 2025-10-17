@@ -33,7 +33,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">⏰ Time Limit</h3>
           <ul className="list-disc list-inside space-y-1">
-            <li>Each game session lasts exactly <strong>30 seconds</strong></li>
+            <li>Each game session lasts exactly <strong>60 seconds</strong></li>
             <li>The timer starts when you click &quot;Start Game&quot;</li>
             <li>Timer turns orange when under 10 seconds, red when under 5 seconds</li>
             <li>Game ends automatically when time runs out</li>
@@ -45,7 +45,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
           <ul className="list-disc list-inside space-y-1">
             <li><strong>50 points</strong> for each target word found</li>
             <li>Your score accumulates across multiple rounds within the same game session</li>
-            <li>High scores are automatically saved to the leaderboard</li>
+            <li>High scores are automatically saved locally</li>
             <li>Try to find as many words as possible before time runs out!</li>
           </ul>
         </div>

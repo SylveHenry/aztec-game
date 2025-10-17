@@ -35,7 +35,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   onStopGame,
   onResetGame
 }) => {
-  const { grid, selectedCells, targetWordPositions } = gameState;
+  const { grid, selectedCells, targetWordPositions, hintShown, hintPosition } = gameState;
   const gameBoardRef = useRef<HTMLDivElement>(null);
 
   // Focus the game board when the game starts
@@ -61,11 +61,20 @@ const GameBoard: React.FC<GameBoardProps> = ({
     return targetWordPositions.some(pos => pos.row === row && pos.col === col);
   };
 
+  const isCellHinted = (row: number, col: number): boolean => {
+    return Boolean(hintShown && hintPosition && hintPosition.row === row && hintPosition.col === col);
+  };
+
   const getCellClassName = (row: number, col: number): string => {
     const baseClasses = "aspect-square border-2 border-amber-300 flex items-center justify-center font-bold cursor-pointer select-none transition-all duration-200 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl";
     
     if (isCellSelected(row, col)) {
       return `${baseClasses} bg-blue-500 text-white border-blue-600 transform scale-105`;
+    }
+    
+    // Highlight hinted cell with a pulsing yellow background
+    if (isCellHinted(row, col)) {
+      return `${baseClasses} bg-yellow-300 text-yellow-900 border-yellow-500 animate-pulse transform scale-105`;
     }
     
     // Highlight target word positions when game is over
@@ -108,7 +117,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
                   timeRemaining <= 10 ? 'bg-orange-500' : 
                   'bg-green-500'
                 }`}
-                style={{ width: `${(timeRemaining / 30) * 100}%` }}
+                style={{ width: `${(timeRemaining / 60) * 100}%` }}
               />
             </div>
           )}
@@ -192,14 +201,39 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Feedback Message Overlay */}
           {gameState.feedbackMessage && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-lg">
-              <div className="text-center">
-                <div className={`text-4xl font-bold px-8 py-4 rounded-lg shadow-2xl ${
-                  gameState.feedbackMessage === 'Success!' 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-red-500 text-white'
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50 backdrop-blur-sm z-50">
+              <div className="text-center max-w-md mx-4">
+                <div className={`relative px-8 py-6 rounded-2xl shadow-2xl border-2 transform transition-all duration-500 ${
+                  gameState.feedbackMessage.startsWith('Success!') 
+                    ? 'bg-gradient-to-br from-green-400 via-green-500 to-emerald-600 text-white border-green-300' 
+                    : 'bg-gradient-to-br from-red-400 via-red-500 to-rose-600 text-white border-red-300'
                 }`}>
-                  {gameState.feedbackMessage}
+                  {/* Decorative elements */}
+                  <div className="absolute -top-2 -left-2 w-4 h-4 bg-white rounded-full opacity-30"></div>
+                  <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-white rounded-full opacity-30"></div>
+                  
+                  {/* Main message */}
+                  <div className="text-3xl font-bold mb-3">
+                    {gameState.feedbackMessage.startsWith('Success!') ? '🎉 SUCCESS! 🎉' : '⏰ TIME UP! ⏰'}
+                  </div>
+                  
+                  {/* Did you know fact */}
+                  <div className="text-sm font-semibold leading-relaxed bg-gray-900 bg-opacity-80 text-gray-100 rounded-lg p-3 backdrop-blur-sm border border-white border-opacity-30">
+                    <span className="text-yellow-300 font-bold">Did you know: </span>
+                    {gameState.feedbackMessage.includes('Do you know:') 
+                      ? gameState.feedbackMessage.split('Do you know: ')[1]
+                      : gameState.feedbackMessage
+                    }
+                  </div>
+                  
+                  {/* Sparkle animation for success */}
+                  {gameState.feedbackMessage.startsWith('Success!') && (
+                    <>
+                      <div className="absolute top-0 left-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-ping"></div>
+                      <div className="absolute top-1/4 right-0 w-1 h-1 bg-yellow-200 rounded-full animate-ping delay-150"></div>
+                      <div className="absolute bottom-1/4 left-0 w-1 h-1 bg-yellow-200 rounded-full animate-ping delay-300"></div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

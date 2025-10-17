@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { User, AuthState } from '@/types/game';
-import { getUserFromStorage, saveUserToStorage, clearUserFromStorage, updateUserScore } from '@/utils/auth';
+import { getUserFromStorage, saveUserToStorage, clearUserFromStorage } from '@/utils/auth';
 
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
@@ -42,30 +42,21 @@ export const useAuth = () => {
   const updateScore = useCallback(async (score: number, roundsPlayed: number) => {
     if (!authState.user) return { success: false, error: 'No authenticated user' };
 
-    try {
-      const result = await updateUserScore(authState.user._id!, score, roundsPlayed);
-      
-      if (result.success) {
-        // Always update local user data when score update is successful
-        const updatedUser = {
-          ...authState.user,
-          highScore: result.highScoreUpdated ? score : authState.user.highScore,
-          totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
-          lastPlayedAt: new Date()
-        };
-        
-        saveUserToStorage(updatedUser);
-        setAuthState(prev => ({
-          ...prev,
-          user: updatedUser
-        }));
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Score update error:', error);
-      return { success: false, error: 'Failed to update score' };
-    }
+    // Update local user data only (no database operations)
+    const updatedUser = {
+      ...authState.user,
+      highScore: score > authState.user.highScore ? score : authState.user.highScore,
+      totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
+      lastPlayedAt: new Date()
+    };
+    
+    saveUserToStorage(updatedUser);
+    setAuthState(prev => ({
+      ...prev,
+      user: updatedUser
+    }));
+    
+    return { success: true, highScoreUpdated: score > authState.user.highScore };
   }, [authState.user]);
 
   const requireAuth = useCallback(() => {
