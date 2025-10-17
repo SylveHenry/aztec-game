@@ -201,7 +201,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Feedback Message Overlay */}
           {gameState.feedbackMessage && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black bg-opacity-50 backdrop-blur-sm z-50">
+            <div className="absolute inset-0 flex items-center justify-center rounded-lg z-50">
               <div className="text-center max-w-md mx-4">
                 <div className={`relative px-8 py-6 rounded-2xl shadow-2xl border-2 transform transition-all duration-500 ${
                   gameState.feedbackMessage.startsWith('Success!') 

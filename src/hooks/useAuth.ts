@@ -42,7 +42,60 @@ export const useAuth = () => {
   const updateScore = useCallback(async (score: number, roundsPlayed: number) => {
     if (!authState.user) return { success: false, error: 'No authenticated user' };
 
-    // Update local user data only (no database operations)
+    try {
+      // Save score to database if user is authenticated
+      const response = await fetch('/api/scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: authState.user._id,
+          username: authState.user.username,
+          score,
+          roundsPlayed
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Failed to save score to database:', result.error);
+        // Fall back to local storage only
+        return updateScoreLocally(score, roundsPlayed);
+      }
+
+      // Update local user data with the database response
+      const updatedUser = {
+        ...authState.user,
+        highScore: result.highScoreUpdated ? score : authState.user.highScore,
+        totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
+        lastPlayedAt: new Date()
+      };
+      
+      saveUserToStorage(updatedUser);
+      setAuthState(prev => ({
+        ...prev,
+        user: updatedUser
+      }));
+      
+      return { 
+        success: true, 
+        highScoreUpdated: result.highScoreUpdated,
+        savedToDatabase: true 
+      };
+
+    } catch (error) {
+      console.error('Error saving score to database:', error);
+      // Fall back to local storage only
+      return updateScoreLocally(score, roundsPlayed);
+    }
+  }, [authState.user]);
+
+  // Helper function for local-only score updates (fallback)
+  const updateScoreLocally = useCallback((score: number, roundsPlayed: number) => {
+    if (!authState.user) return { success: false, error: 'No authenticated user' };
+
     const updatedUser = {
       ...authState.user,
       highScore: score > authState.user.highScore ? score : authState.user.highScore,
@@ -56,7 +109,11 @@ export const useAuth = () => {
       user: updatedUser
     }));
     
-    return { success: true, highScoreUpdated: score > authState.user.highScore };
+    return { 
+      success: true, 
+      highScoreUpdated: score > authState.user.highScore,
+      savedToDatabase: false 
+    };
   }, [authState.user]);
 
   const requireAuth = useCallback(() => {

@@ -30,6 +30,9 @@ export const useNewWordCross = () => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState<Position | null>(null);
 
+  // Flag to prevent duplicate score saves
+  const [scoreSaved, setScoreSaved] = useState(false);
+
   // Timer hook
   const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(60);
 
@@ -60,16 +63,17 @@ export const useNewWordCross = () => {
   useEffect(() => {
     setOnTimeUp(() => {
       setGameState(prev => {
-        // Update local score when time runs out
-        if (prev.score > 0) {
+        // Update score when time runs out (only if game is still playing and score not already saved)
+        if (prev.score > 0 && prev.gameStatus === 'playing' && !scoreSaved) {
+          setScoreSaved(true);
           updateScore(prev.score, prev.roundsPlayed).then(result => {
             if (!result.success) {
-              console.error('Failed to update local score on time up:', result.error);
+              console.error('Failed to update score on time up:', result.error);
             } else {
-              console.log('Local score successfully updated on time up:', result);
+              console.log('Score successfully updated on time up:', result);
             }
           }).catch(error => {
-            console.error('Failed to update local score on time up:', error);
+            console.error('Failed to update score on time up:', error);
           });
         }
         
@@ -88,7 +92,7 @@ export const useNewWordCross = () => {
         }));
       }, 5000);
     });
-  }, [setOnTimeUp, updateScore]);
+  }, [setOnTimeUp, updateScore, scoreSaved]);
 
   // Start a new game
   const startGame = useCallback(() => {
@@ -106,6 +110,7 @@ export const useNewWordCross = () => {
       hintShown: false,
       hintPosition: undefined
     });
+    setScoreSaved(false); // Reset score saved flag for new game
     resetTimer(60);
     startTimer();
   }, [resetTimer, startTimer]);
@@ -132,16 +137,17 @@ export const useNewWordCross = () => {
   const stopGame = useCallback(() => {
     stopTimer();
     setGameState(prev => {
-      // Update local score when manually stopped
-      if (prev.score > 0) {
+      // Update score when manually stopped (only if game is still playing and score not already saved)
+      if (prev.score > 0 && prev.gameStatus === 'playing' && !scoreSaved) {
+        setScoreSaved(true);
         updateScore(prev.score, prev.roundsPlayed).then(result => {
           if (!result.success) {
-            console.error('Failed to update local score on manual stop:', result.error);
+            console.error('Failed to update score on manual stop:', result.error);
           } else {
-            console.log('Local score successfully updated on manual stop:', result);
+            console.log('Score successfully updated on manual stop:', result);
           }
         }).catch(error => {
-          console.error('Failed to update local score on manual stop:', error);
+          console.error('Failed to update score on manual stop:', error);
         });
       }
       
@@ -150,7 +156,7 @@ export const useNewWordCross = () => {
         gameStatus: 'gameOver'
       };
     });
-  }, [stopTimer, updateScore]);
+  }, [stopTimer, updateScore, scoreSaved]);
 
   // Reset the game
   const resetGame = useCallback(() => {
@@ -168,6 +174,7 @@ export const useNewWordCross = () => {
       hintShown: false,
       hintPosition: undefined
     });
+    setScoreSaved(false); // Reset score saved flag for reset game
     resetTimer(60);
   }, [resetTimer]);
 

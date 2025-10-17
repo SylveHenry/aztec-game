@@ -37,6 +37,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userPosition, _setUserPosition] = useState<UserPosition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGlobalLeaderboard, setIsGlobalLeaderboard] = useState(false);
 
   const loadLocalLeaderboard = useCallback(() => {
     try {
@@ -45,16 +46,40 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
         const entries = JSON.parse(stored);
         setLeaderboard(entries);
       }
+      setIsGlobalLeaderboard(false);
     } catch (error) {
       console.error('Failed to load local leaderboard:', error);
       setLeaderboard([]);
+      setIsGlobalLeaderboard(false);
     }
   }, []);
 
   const loadLeaderboard = useCallback(async () => {
     try {
-      console.log('🔄 Loading leaderboard data from localStorage...');
+      console.log('🔄 Loading leaderboard data...');
       setIsLoading(true);
+      
+      // If user is authenticated, try to load from database
+      if (currentUser && currentUser._id) {
+        try {
+          const response = await fetch(`/api/scores?limit=20&userId=${currentUser._id}`);
+          const result = await response.json();
+          
+          if (response.ok && result.success) {
+            console.log('✅ Successfully loaded global leaderboard from database');
+            setLeaderboard(result.leaderboard);
+            setIsGlobalLeaderboard(true);
+            return;
+          } else {
+            console.warn('⚠️ Failed to load from database, falling back to local:', result.error);
+          }
+        } catch (error) {
+          console.warn('⚠️ Database request failed, falling back to local:', error);
+        }
+      }
+      
+      // Fallback to local leaderboard
+      console.log('📱 Loading local leaderboard as fallback');
       loadLocalLeaderboard();
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
@@ -62,7 +87,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [loadLocalLeaderboard]);
+  }, [loadLocalLeaderboard, currentUser]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -115,9 +140,18 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">
-          🏆 Top 20 Leaderboard
-        </h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">
+            🏆 Top 20 Leaderboard
+          </h2>
+          <div className="text-sm text-gray-600 mt-1">
+            {isGlobalLeaderboard ? (
+              <span className="text-green-600 font-medium">🌍 Global Rankings</span>
+            ) : (
+              <span className="text-blue-600 font-medium">📱 Local Scores</span>
+            )}
+          </div>
+        </div>
         <button
           onClick={loadLeaderboard}
           className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
