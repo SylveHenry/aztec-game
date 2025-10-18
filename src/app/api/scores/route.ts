@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format the leaderboard entries
-    const leaderboard = topScores.map((entry, index) => ({
+    const leaderboard = topScores.map((entry) => ({
       id: entry._id?.toString() || '',
       playerName: entry.username,
       score: entry.score,

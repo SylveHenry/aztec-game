@@ -13,12 +13,20 @@ export const useAuth = () => {
 
   // Load user from storage on mount
   useEffect(() => {
-    const storedUser = getUserFromStorage();
-    setAuthState({
-      isAuthenticated: !!storedUser,
-      user: storedUser,
-      isLoading: false
-    });
+    // Add a small delay to ensure storage clearing has completed
+    const loadUserFromStorage = () => {
+      const storedUser = getUserFromStorage();
+      setAuthState({
+        isAuthenticated: !!storedUser,
+        user: storedUser,
+        isLoading: false
+      });
+    };
+
+    // Use setTimeout to ensure this runs after storage clearing
+    const timeoutId = setTimeout(loadUserFromStorage, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const login = useCallback((user: User) => {
@@ -38,6 +46,30 @@ export const useAuth = () => {
       isLoading: false
     });
   }, []);
+
+  // Helper function for local-only score updates (fallback)
+  const updateScoreLocally = useCallback((score: number, roundsPlayed: number) => {
+    if (!authState.user) return { success: false, error: 'No authenticated user' };
+
+    const updatedUser = {
+      ...authState.user,
+      highScore: score > authState.user.highScore ? score : authState.user.highScore,
+      totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
+      lastPlayedAt: new Date()
+    };
+    
+    saveUserToStorage(updatedUser);
+    setAuthState(prev => ({
+      ...prev,
+      user: updatedUser
+    }));
+    
+    return { 
+      success: true, 
+      highScoreUpdated: score > authState.user.highScore,
+      savedToDatabase: false 
+    };
+  }, [authState.user]);
 
   const updateScore = useCallback(async (score: number, roundsPlayed: number) => {
     if (!authState.user) return { success: false, error: 'No authenticated user' };
@@ -90,31 +122,7 @@ export const useAuth = () => {
       // Fall back to local storage only
       return updateScoreLocally(score, roundsPlayed);
     }
-  }, [authState.user]);
-
-  // Helper function for local-only score updates (fallback)
-  const updateScoreLocally = useCallback((score: number, roundsPlayed: number) => {
-    if (!authState.user) return { success: false, error: 'No authenticated user' };
-
-    const updatedUser = {
-      ...authState.user,
-      highScore: score > authState.user.highScore ? score : authState.user.highScore,
-      totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
-      lastPlayedAt: new Date()
-    };
-    
-    saveUserToStorage(updatedUser);
-    setAuthState(prev => ({
-      ...prev,
-      user: updatedUser
-    }));
-    
-    return { 
-      success: true, 
-      highScoreUpdated: score > authState.user.highScore,
-      savedToDatabase: false 
-    };
-  }, [authState.user]);
+  }, [authState.user, updateScoreLocally]);
 
   const requireAuth = useCallback(() => {
     return authState.isAuthenticated && authState.user;

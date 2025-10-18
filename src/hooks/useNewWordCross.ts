@@ -59,40 +59,48 @@ export const useNewWordCross = () => {
     }
   }, [timeRemaining, gameState.hintShown, gameState.gameStatus, gameState.targetWordPositions]);
 
-  // Handle time up
-  useEffect(() => {
-    setOnTimeUp(() => {
-      setGameState(prev => {
-        // Update score when time runs out (only if game is still playing and score not already saved)
-        if (prev.score > 0 && prev.gameStatus === 'playing' && !scoreSaved) {
-          setScoreSaved(true);
-          updateScore(prev.score, prev.roundsPlayed).then(result => {
-            if (!result.success) {
-              console.error('Failed to update score on time up:', result.error);
-            } else {
-              console.log('Score successfully updated on time up:', result);
-            }
-          }).catch(error => {
-            console.error('Failed to update score on time up:', error);
-          });
-        }
-        
-        return {
-          ...prev,
-          gameStatus: 'gameOver',
-          feedbackMessage: `Time Up! ${getRandomDidYouKnowFact()}`
-        };
-      });
+  // Stop the game (unified function for both manual and automatic stopping)
+  const stopGame = useCallback((reason: 'manual' | 'timeUp' = 'manual') => {
+    stopTimer();
+    setGameState(prev => {
+      // Update score when game stops (only if game is still playing and score not already saved)
+      if (prev.score > 0 && prev.gameStatus === 'playing' && !scoreSaved) {
+        setScoreSaved(true);
+        updateScore(prev.score, prev.roundsPlayed).then(result => {
+          if (!result.success) {
+            console.error(`Failed to update score on ${reason} stop:`, result.error);
+          } else {
+            console.log(`Score successfully updated on ${reason} stop:`, result);
+          }
+        }).catch(error => {
+          console.error(`Failed to update score on ${reason} stop:`, error);
+        });
+      }
       
-      // Clear the feedback message after 5 seconds to show target word highlighting
+      return {
+        ...prev,
+        gameStatus: 'gameOver',
+        feedbackMessage: reason === 'timeUp' ? `Time Up! ${getRandomDidYouKnowFact()}` : undefined
+      };
+    });
+
+    // Clear the feedback message after 5 seconds if it was a time up stop
+    if (reason === 'timeUp') {
       setTimeout(() => {
         setGameState(prev => ({
           ...prev,
           feedbackMessage: undefined
         }));
       }, 5000);
+    }
+  }, [stopTimer, updateScore, scoreSaved]);
+
+  // Handle time up
+  useEffect(() => {
+    setOnTimeUp(() => {
+      stopGame('timeUp');
     });
-  }, [setOnTimeUp, updateScore, scoreSaved]);
+  }, [setOnTimeUp, stopGame]);
 
   // Start a new game
   const startGame = useCallback(() => {
@@ -132,31 +140,6 @@ export const useNewWordCross = () => {
     resetTimer(60);
     startTimer();
   }, [resetTimer, startTimer]);
-
-  // Stop the game
-  const stopGame = useCallback(() => {
-    stopTimer();
-    setGameState(prev => {
-      // Update score when manually stopped (only if game is still playing and score not already saved)
-      if (prev.score > 0 && prev.gameStatus === 'playing' && !scoreSaved) {
-        setScoreSaved(true);
-        updateScore(prev.score, prev.roundsPlayed).then(result => {
-          if (!result.success) {
-            console.error('Failed to update score on manual stop:', result.error);
-          } else {
-            console.log('Score successfully updated on manual stop:', result);
-          }
-        }).catch(error => {
-          console.error('Failed to update score on manual stop:', error);
-        });
-      }
-      
-      return {
-        ...prev,
-        gameStatus: 'gameOver'
-      };
-    });
-  }, [stopTimer, updateScore, scoreSaved]);
 
   // Reset the game
   const resetGame = useCallback(() => {

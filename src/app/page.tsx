@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import GameBoard from '@/components/GameBoard';
@@ -10,9 +10,16 @@ import { User } from '@/types/game';
 
 import { useNewWordCross } from '@/hooks/useNewWordCross';
 import { useAuth } from '@/hooks/useAuth';
+import { clearAllBrowserStorage } from '@/utils/storageManager';
 
 export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  
+  // Clear all browser storage on page load/refresh
+  useEffect(() => {
+    console.log('🔄 Page loaded/refreshed - clearing all browser storage...');
+    clearAllBrowserStorage();
+  }, []); // Empty dependency array ensures this runs only once on mount
   
   const {
     gameState,
@@ -39,11 +46,14 @@ export default function Home() {
   };
 
   const handleNewGame = () => {
-    if (!requireAuth()) {
-      setAuthModalOpen(true);
-      return;
-    }
+    // Clear all browser storage first
+    clearAllBrowserStorage();
+    
+    // Reset the game state
     resetGame();
+    
+    // Show the auth modal to require re-authentication
+    setAuthModalOpen(true);
   };
 
   const handleLogout = () => {
