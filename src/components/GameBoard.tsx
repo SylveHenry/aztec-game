@@ -18,6 +18,7 @@ interface GameBoardProps {
   onStartGame?: () => void;
   onStopGame?: () => void;
   onResetGame?: () => void;
+  onCloseFeedback?: () => void;
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({
@@ -33,7 +34,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
   gameStatus,
   onStartGame,
   onStopGame,
-  onResetGame
+  onResetGame,
+  onCloseFeedback
 }) => {
   const { grid, selectedCells, targetWordPositions, hintShown, hintPosition } = gameState;
   const gameBoardRef = useRef<HTMLDivElement>(null);
@@ -208,6 +210,17 @@ const GameBoard: React.FC<GameBoardProps> = ({
                     ? 'bg-gradient-to-br from-green-400 via-green-500 to-emerald-600 text-white border-green-300' 
                     : 'bg-gradient-to-br from-red-400 via-red-500 to-rose-600 text-white border-red-300'
                 }`}>
+                  {/* Close Button */}
+                  {onCloseFeedback && (
+                    <button
+                      onClick={onCloseFeedback}
+                      className="absolute top-2 right-2 w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                      aria-label="Close notification"
+                    >
+                      <span className="text-red-600 font-bold text-lg">×</span>
+                    </button>
+                  )}
+                  
                   {/* Decorative elements */}
                   <div className="absolute -top-2 -left-2 w-4 h-4 bg-white rounded-full opacity-30"></div>
                   <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-white rounded-full opacity-30"></div>

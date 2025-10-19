@@ -32,7 +32,8 @@ export default function Home() {
     handleCellTouchEnd,
     startGame,
     stopGame,
-    resetGame
+    resetGame,
+    closeFeedback
   } = useNewWordCross();
 
   const { user, login, logout, requireAuth, updateUserData } = useAuth();
@@ -103,6 +104,7 @@ export default function Home() {
               onStartGame={handleStartGame}
               onStopGame={stopGame}
               onResetGame={handleNewGame}
+              onCloseFeedback={closeFeedback}
             />
           </div>
           

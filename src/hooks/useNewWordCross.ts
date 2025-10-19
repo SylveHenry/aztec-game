@@ -84,14 +84,14 @@ export const useNewWordCross = () => {
       };
     });
 
-    // Clear the feedback message after 5 seconds if it was a time up stop
+    // Clear the feedback message after 10 seconds if it was a time up stop
     if (reason === 'timeUp') {
       setTimeout(() => {
         setGameState(prev => ({
           ...prev,
           feedbackMessage: undefined
         }));
-      }, 5000);
+      }, 10000);
     }
   }, [stopTimer, updateScore, scoreSaved]);
 
@@ -258,10 +258,10 @@ export const useNewWordCross = () => {
         feedbackMessage: `Success! ${getRandomDidYouKnowFact()}`
       }));
       
-      // Start new round after showing success message for 4 seconds
+      // Start new round after showing success message for 10 seconds
       setTimeout(() => {
         startNewRound();
-      }, 4000);
+      }, 10000);
     } else {
       // Clear selection if not target word
       setGameState(prev => ({
@@ -318,10 +318,10 @@ export const useNewWordCross = () => {
         feedbackMessage: `Success! ${getRandomDidYouKnowFact()}`
       }));
       
-      // Start new round after showing success message for 4 seconds
+      // Start new round after showing success message for 10 seconds
       setTimeout(() => {
         startNewRound();
-      }, 4000);
+      }, 10000);
     } else {
       // Clear selection if not target word
       setGameState(prev => ({
@@ -333,6 +333,19 @@ export const useNewWordCross = () => {
     setIsSelecting(false);
     setSelectionStart(null);
   }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound, stopTimer]);
+
+  // Handle manual feedback message dismissal
+  const closeFeedback = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      feedbackMessage: undefined
+    }));
+    
+    // If it was a success message, start new round immediately
+    if (gameState.feedbackMessage?.startsWith('Success!')) {
+      startNewRound();
+    }
+  }, [gameState.feedbackMessage, startNewRound]);
 
   return {
     gameState,
@@ -346,6 +359,7 @@ export const useNewWordCross = () => {
     startGame,
     stopGame,
     resetGame,
+    closeFeedback,
     isSelecting
   };
 };
