@@ -15,12 +15,6 @@ import { clearAllBrowserStorage } from '@/utils/storageManager';
 export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   
-  // Clear all browser storage on page load/refresh
-  useEffect(() => {
-    console.log('🔄 Page loaded/refreshed - clearing all browser storage...');
-    clearAllBrowserStorage();
-  }, []); // Empty dependency array ensures this runs only once on mount
-  
   const {
     gameState,
     timerState,

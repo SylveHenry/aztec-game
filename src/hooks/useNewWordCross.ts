@@ -33,6 +33,9 @@ export const useNewWordCross = () => {
   // Flag to prevent duplicate score saves
   const [scoreSaved, setScoreSaved] = useState(false);
 
+  // Timeout reference for auto-starting new round
+  const [newRoundTimeoutId, setNewRoundTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
   // Timer hook
   const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(60);
 
@@ -125,6 +128,12 @@ export const useNewWordCross = () => {
 
   // Start a new round (after finding target word)
   const startNewRound = useCallback(() => {
+    // Clear any existing timeout when starting a new round
+    if (newRoundTimeoutId) {
+      clearTimeout(newRoundTimeoutId);
+      setNewRoundTimeoutId(null);
+    }
+    
     const newRound = generateNewRound();
     setGameState(prev => ({
       ...prev,
@@ -139,7 +148,7 @@ export const useNewWordCross = () => {
     }));
     resetTimer(60);
     startTimer();
-  }, [resetTimer, startTimer]);
+  }, [resetTimer, startTimer, newRoundTimeoutId]);
 
   // Reset the game
   const resetGame = useCallback(() => {
@@ -259,9 +268,12 @@ export const useNewWordCross = () => {
       }));
       
       // Start new round after showing success message for 10 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         startNewRound();
       }, 10000);
+      
+      // Store the timeout ID to allow cancellation
+      setNewRoundTimeoutId(timeoutId);
     } else {
       // Clear selection if not target word
       setGameState(prev => ({
@@ -319,9 +331,12 @@ export const useNewWordCross = () => {
       }));
       
       // Start new round after showing success message for 10 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         startNewRound();
       }, 10000);
+      
+      // Store the timeout ID to allow cancellation
+      setNewRoundTimeoutId(timeoutId);
     } else {
       // Clear selection if not target word
       setGameState(prev => ({
@@ -336,6 +351,12 @@ export const useNewWordCross = () => {
 
   // Handle manual feedback message dismissal
   const closeFeedback = useCallback(() => {
+    // Clear any pending new round timeout
+    if (newRoundTimeoutId) {
+      clearTimeout(newRoundTimeoutId);
+      setNewRoundTimeoutId(null);
+    }
+    
     setGameState(prev => ({
       ...prev,
       feedbackMessage: undefined
@@ -345,7 +366,7 @@ export const useNewWordCross = () => {
     if (gameState.feedbackMessage?.startsWith('Success!')) {
       startNewRound();
     }
-  }, [gameState.feedbackMessage, startNewRound]);
+  }, [gameState.feedbackMessage, startNewRound, newRoundTimeoutId]);
 
   return {
     gameState,
