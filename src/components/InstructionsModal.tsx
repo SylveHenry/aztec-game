@@ -14,7 +14,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
       <div className="space-y-6 text-gray-700">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">🎯 Objective</h3>
-          <p>Find the specific target blockchain word displayed at the top of the game board within the 5-minute time limit!</p>
+          <p>Find the specific target blockchain word displayed at the top of the game board within the 60 seconds time limit!</p>
         </div>
 
         <div>
@@ -26,7 +26,7 @@ const InstructionsModal: React.FC<InstructionsModalProps> = ({ isOpen, onClose }
             <li>Click and drag to select the target word in any direction</li>
             <li>Words can be horizontal, vertical, or diagonal (including backwards)</li>
             <li>Successfully finding the word earns you <strong>50 points</strong> and starts a new round</li>
-            <li>Continue finding target words until the 5-minute timer runs out</li>
+            <li>Continue finding target words until the 60 seconds timer runs out</li>
           </ol>
         </div>
 
