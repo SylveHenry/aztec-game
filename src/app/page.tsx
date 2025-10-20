@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import GameBoard from '@/components/GameBoard';
@@ -10,7 +10,6 @@ import { User } from '@/types/game';
 
 import { useNewWordCross } from '@/hooks/useNewWordCross';
 import { useAuth } from '@/hooks/useAuth';
-import { clearAllBrowserStorage } from '@/utils/storageManager';
 
 export default function Home() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -41,14 +40,13 @@ export default function Home() {
   };
 
   const handleNewGame = () => {
-    // Clear all browser storage first
-    clearAllBrowserStorage();
-    
     // Reset the game state
     resetGame();
     
-    // Show the auth modal to require re-authentication
-    setAuthModalOpen(true);
+    // Only show auth modal if user is not authenticated
+    if (!requireAuth()) {
+      setAuthModalOpen(true);
+    }
   };
 
   const handleLogout = () => {

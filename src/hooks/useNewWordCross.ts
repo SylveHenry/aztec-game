@@ -36,10 +36,39 @@ export const useNewWordCross = () => {
   // Timeout reference for auto-starting new round
   const [newRoundTimeoutId, setNewRoundTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
+  // Periodic auto-save interval reference
+  const [autoSaveIntervalId, setAutoSaveIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [lastSavedScore, setLastSavedScore] = useState(0);
+  const MAX_RETRY_ATTEMPTS = 3;
+
+  // Retry save function with exponential backoff
+  const retrySave = useCallback(async (score: number, rounds: number, attempt: number = 1): Promise<void> => {
+    try {
+      const result = await updateScore(score, rounds);
+      if (result.success) {
+        setLastSavedScore(score);
+        console.log(`Score saved successfully on attempt ${attempt}:`, result);
+      } else {
+        throw new Error(result.error || 'Save failed');
+      }
+    } catch (error) {
+      console.error(`Save attempt ${attempt} failed:`, error);
+      
+      if (attempt < MAX_RETRY_ATTEMPTS) {
+        const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`Retrying save in ${delay}ms...`);
+        
+        setTimeout(() => {
+          retrySave(score, rounds, attempt + 1);
+        }, delay);
+      } else {
+        console.error(`Failed to save score after ${MAX_RETRY_ATTEMPTS} attempts`);
+      }
+    }
+  }, [updateScore, MAX_RETRY_ATTEMPTS]);
+
   // Timer hook
   const { timeRemaining, isRunning, startTimer, stopTimer, resetTimer, setOnTimeUp } = useTimer(60);
-
-  // Update game state time remaining when timer changes
   useEffect(() => {
     setGameState(prev => ({
       ...prev,
@@ -65,18 +94,27 @@ export const useNewWordCross = () => {
   // Stop the game (unified function for both manual and automatic stopping)
   const stopGame = useCallback((reason: 'manual' | 'timeUp' = 'manual') => {
     stopTimer();
+    
+    // Clear auto-save interval when game stops
+    if (autoSaveIntervalId) {
+      clearInterval(autoSaveIntervalId);
+      setAutoSaveIntervalId(null);
+    }
+    
     setGameState(prev => {
-      // Update score when game stops (only if game is still playing and score not already saved)
+      // Only update score when game stops if score hasn't been saved yet and game is still playing
+      // Since we now save scores immediately when words are found, this is mainly for cleanup
       if (prev.score > 0 && prev.gameStatus === 'playing' && !scoreSaved) {
         setScoreSaved(true);
+        // Final score save - this ensures any remaining score is saved
         updateScore(prev.score, prev.roundsPlayed).then(result => {
           if (!result.success) {
-            console.error(`Failed to update score on ${reason} stop:`, result.error);
+            console.error(`Failed to save final score on ${reason} stop:`, result.error);
           } else {
-            console.log(`Score successfully updated on ${reason} stop:`, result);
+            console.log(`Final score successfully saved on ${reason} stop:`, result);
           }
         }).catch(error => {
-          console.error(`Failed to update score on ${reason} stop:`, error);
+          console.error(`Failed to save final score on ${reason} stop:`, error);
         });
       }
       
@@ -96,7 +134,7 @@ export const useNewWordCross = () => {
         }));
       }, 10000);
     }
-  }, [stopTimer, updateScore, scoreSaved]);
+  }, [stopTimer, updateScore, scoreSaved, autoSaveIntervalId]);
 
   // Handle time up
   useEffect(() => {
@@ -122,9 +160,22 @@ export const useNewWordCross = () => {
       hintPosition: undefined
     });
     setScoreSaved(false); // Reset score saved flag for new game
+    setLastSavedScore(0); // Reset last saved score
     resetTimer(60);
     startTimer();
-  }, [resetTimer, startTimer]);
+
+    // Start periodic auto-save (every 30 seconds)
+    const intervalId = setInterval(() => {
+      setGameState(currentState => {
+        if (currentState.gameStatus === 'playing' && currentState.score > lastSavedScore) {
+          retrySave(currentState.score, currentState.roundsPlayed);
+        }
+        return currentState;
+      });
+    }, 30000); // Auto-save every 30 seconds
+
+    setAutoSaveIntervalId(intervalId);
+  }, [resetTimer, startTimer, lastSavedScore, retrySave]);
 
   // Start a new round (after finding target word)
   const startNewRound = useCallback(() => {
@@ -152,6 +203,12 @@ export const useNewWordCross = () => {
 
   // Reset the game
   const resetGame = useCallback(() => {
+    // Clear auto-save interval when game resets
+    if (autoSaveIntervalId) {
+      clearInterval(autoSaveIntervalId);
+      setAutoSaveIntervalId(null);
+    }
+    
     const newRound = generateNewRound();
     setGameState({
       grid: newRound.grid,
@@ -167,8 +224,9 @@ export const useNewWordCross = () => {
       hintPosition: undefined
     });
     setScoreSaved(false); // Reset score saved flag for reset game
+    setLastSavedScore(0); // Reset last saved score
     resetTimer(60);
-  }, [resetTimer]);
+  }, [resetTimer, autoSaveIntervalId]);
 
   // Get selection path between two positions
   const getSelectionPath = useCallback((start: Position, end: Position): Position[] => {
@@ -266,6 +324,9 @@ export const useNewWordCross = () => {
         selectedCells: [],
         feedbackMessage: `Success! ${getRandomDidYouKnowFact()}`
       }));
+
+      // Save score immediately to database with retry logic
+      retrySave(newScore, gameState.roundsPlayed);
       
       // Start new round after showing success message for 10 seconds
       const timeoutId = setTimeout(() => {
@@ -284,7 +345,7 @@ export const useNewWordCross = () => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound, stopTimer]);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, gameState.roundsPlayed, checkTargetWordMatch, startNewRound, stopTimer, retrySave]);
 
   // Handle cell touch start
   const handleCellTouchStart = useCallback((row: number, col: number) => {
@@ -329,6 +390,9 @@ export const useNewWordCross = () => {
         selectedCells: [],
         feedbackMessage: `Success! ${getRandomDidYouKnowFact()}`
       }));
+
+      // Save score immediately to database with retry logic
+      retrySave(newScore, gameState.roundsPlayed);
       
       // Start new round after showing success message for 10 seconds
       const timeoutId = setTimeout(() => {
@@ -347,7 +411,7 @@ export const useNewWordCross = () => {
 
     setIsSelecting(false);
     setSelectionStart(null);
-  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, checkTargetWordMatch, startNewRound, stopTimer]);
+  }, [isSelecting, gameState.gameStatus, gameState.selectedCells, gameState.score, gameState.roundsPlayed, checkTargetWordMatch, startNewRound, stopTimer, retrySave]);
 
   // Handle manual feedback message dismissal
   const closeFeedback = useCallback(() => {

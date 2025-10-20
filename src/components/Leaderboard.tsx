@@ -30,71 +30,100 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   roundsPlayed, 
   gameStatus,
   currentUser,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onUserUpdate: _onUserUpdate
+  onUserUpdate
 }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [userPosition, _setUserPosition] = useState<UserPosition | null>(null);
+  const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGlobalLeaderboard, setIsGlobalLeaderboard] = useState(false);
 
-  const loadLocalLeaderboard = useCallback(() => {
-    try {
-      const stored = localStorage.getItem('wordCrossLeaderboard');
-      if (stored) {
-        const entries = JSON.parse(stored);
-        setLeaderboard(entries);
-      }
-      setIsGlobalLeaderboard(false);
-    } catch (error) {
-      console.error('Failed to load local leaderboard:', error);
-      setLeaderboard([]);
-      setIsGlobalLeaderboard(false);
+  const saveScore = useCallback(async () => {
+    if (!currentUser || !currentUser._id || roundsPlayed === 0) {
+      console.log('No user or no rounds played, skipping score save.');
+      return;
     }
-  }, []);
+
+    try {
+      console.log('Saving score...');
+      const response = await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser._id,
+          username: currentUser.username,
+          score: currentScore,
+          roundsPlayed,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('Score saved successfully!', result);
+        if (onUserUpdate && result.highScoreUpdated) {
+          const updatedUser = { ...currentUser, highScore: currentScore };
+          onUserUpdate(updatedUser);
+        }
+      } else {
+        console.error('Failed to save score:', result.error);
+      }
+    } catch (error) {
+      console.error('Error saving score:', error);
+    }
+  }, [currentUser, currentScore, roundsPlayed, onUserUpdate]);
 
   const loadLeaderboard = useCallback(async () => {
     try {
       console.log('🔄 Loading leaderboard data...');
       setIsLoading(true);
-      
-      // If user is authenticated, try to load from database
+      setUserPosition(null); // Reset user position on load
+
+      // Construct the API URL, adding userId only if the user is authenticated
+      let apiUrl = '/api/scores?limit=20';
       if (currentUser && currentUser._id) {
-        try {
-          const response = await fetch(`/api/scores?limit=20&userId=${currentUser._id}`);
-          const result = await response.json();
-          
-          if (response.ok && result.success) {
-            console.log('✅ Successfully loaded global leaderboard from database');
-            setLeaderboard(result.leaderboard);
-            setIsGlobalLeaderboard(true);
-            return;
-          } else {
-            console.warn('⚠️ Failed to load from database, falling back to local:', result.error);
-          }
-        } catch (error) {
-          console.warn('⚠️ Database request failed, falling back to local:', error);
-        }
+        apiUrl += `&userId=${currentUser._id}`;
       }
-      
-      // Fallback to local leaderboard
-      console.log('📱 Loading local leaderboard as fallback');
-      loadLocalLeaderboard();
+
+      try {
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          console.log('✅ Successfully loaded global leaderboard from database');
+          setLeaderboard(result.leaderboard);
+          setIsGlobalLeaderboard(true);
+
+          if (result.userPosition) {
+            setUserPosition({
+              ...result.userPosition,
+              isInTop20: result.userPosition.rank <= 20,
+            });
+          }
+        } else {
+          console.warn('⚠️ Failed to load from database:', result.error);
+          setLeaderboard([]);
+          setIsGlobalLeaderboard(false);
+        }
+      } catch (error) {
+        console.warn('⚠️ Database request failed:', error);
+        setLeaderboard([]);
+        setIsGlobalLeaderboard(false);
+      }
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
       setLeaderboard([]);
     } finally {
       setIsLoading(false);
     }
-  }, [loadLocalLeaderboard, currentUser]);
+  }, [currentUser]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         console.log('🚀 Initial leaderboard load triggered');
         setIsLoading(true);
-        loadLocalLeaderboard();
+        // Load from database only, no local storage
+        await loadLeaderboard();
       } catch (error) {
         console.error('Failed to load leaderboard:', error);
         setLeaderboard([]);
@@ -104,19 +133,21 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
     };
     
     loadData();
-  }, [loadLocalLeaderboard]);
+  }, [loadLeaderboard]);
 
-  // Refresh leaderboard when game ends and user is authenticated
+  // Save score and refresh leaderboard when game ends
   useEffect(() => {
     if (gameStatus === 'gameOver' && currentUser) {
-      console.log('🎮 Game over detected, refreshing leaderboard in 1 second...');
-      // Small delay to ensure score update has been processed
-      setTimeout(() => {
-        console.log('⏰ Timeout completed, loading leaderboard...');
-        loadLeaderboard();
-      }, 1000);
+      console.log('🎮 Game over detected, saving score...');
+      saveScore().then(() => {
+        console.log('Score saved, refreshing leaderboard in 1 second...');
+        setTimeout(() => {
+          console.log('⏰ Timeout completed, loading leaderboard...');
+          loadLeaderboard();
+        }, 1000);
+      });
     }
-  }, [gameStatus, currentUser, loadLeaderboard]);
+  }, [gameStatus, currentUser, saveScore, loadLeaderboard]);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString();
@@ -148,7 +179,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
             {isGlobalLeaderboard ? (
               <span className="text-green-600 font-medium">🌍 Global Rankings</span>
             ) : (
-              <span className="text-blue-600 font-medium">📱 Local Scores</span>
+              <span className="text-gray-500 font-medium">📊 No Data Available</span>
             )}
           </div>
         </div>
@@ -178,18 +209,22 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
               <span>Rounds:</span>
               <span className="font-medium">{roundsPlayed}</span>
             </div>
-            <div className="flex justify-between">
-              <span>High Score:</span>
-              <span className="font-medium">{currentUser.highScore || 0}</span>
-            </div>
-            {userPosition && (
-              <div className="flex justify-between">
-                <span>Leaderboard Position:</span>
-                <span className="font-medium">
-                  #{userPosition.rank}
-                  {userPosition.isInTop20 && <span className="text-green-600 ml-1">🏆</span>}
-                </span>
-              </div>
+            {userPosition ? (
+              <>
+                <div className="flex justify-between">
+                  <span>All-Time High Score:</span>
+                  <span className="font-medium">{userPosition.score}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Global Rank:</span>
+                  <span className="font-medium">
+                    #{userPosition.rank}
+                    {userPosition.isInTop20 && <span className="text-green-600 ml-1">🏆</span>}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-gray-500 py-2">Loading ranking...</div>
             )}
           </div>
         </div>
@@ -199,7 +234,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
       <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {leaderboard.length === 0 ? (
           <div className="text-center text-gray-500 py-4">
-            No scores yet. Be the first to play!
+            {isGlobalLeaderboard ? 'No scores yet. Be the first!' : 'Could not load leaderboard.'}
           </div>
         ) : (
           leaderboard.map((entry, index) => (

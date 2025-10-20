@@ -58,7 +58,7 @@ const GameControls: React.FC<GameControlsProps> = ({
                 <div>Rounds Played: <span className="font-bold text-purple-600">{roundsPlayed}</span></div>
                 {currentScore > 0 && (
                   <div className="text-green-600 font-medium">
-                    ✨ Score saved locally!
+                    ✨ Score saved to database!
                   </div>
                 )}
               </div>

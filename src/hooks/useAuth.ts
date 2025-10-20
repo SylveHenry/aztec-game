@@ -2,35 +2,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { User, AuthState } from '@/types/game';
-import { getUserFromStorage, saveUserToStorage, clearUserFromStorage } from '@/utils/auth';
 
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     user: null,
-    isLoading: true
+    isLoading: false // No need to load from storage, so no loading state needed
   });
 
-  // Load user from storage on mount
+  // No storage loading on mount - user must re-authenticate every session
   useEffect(() => {
-    // Add a small delay to ensure storage clearing has completed
-    const loadUserFromStorage = () => {
-      const storedUser = getUserFromStorage();
-      setAuthState({
-        isAuthenticated: !!storedUser,
-        user: storedUser,
-        isLoading: false
-      });
-    };
-
-    // Use setTimeout to ensure this runs after storage clearing
-    const timeoutId = setTimeout(loadUserFromStorage, 100);
-    
-    return () => clearTimeout(timeoutId);
+    // Authentication state starts fresh every time
+    setAuthState({
+      isAuthenticated: false,
+      user: null,
+      isLoading: false
+    });
   }, []);
 
   const login = useCallback((user: User) => {
-    saveUserToStorage(user);
+    // Only store in memory, no browser storage
     setAuthState({
       isAuthenticated: true,
       user,
@@ -39,7 +30,7 @@ export const useAuth = () => {
   }, []);
 
   const logout = useCallback(() => {
-    clearUserFromStorage();
+    // Clear memory state only
     setAuthState({
       isAuthenticated: false,
       user: null,
@@ -47,35 +38,12 @@ export const useAuth = () => {
     });
   }, []);
 
-  // Helper function for local-only score updates (fallback)
-  const updateScoreLocally = useCallback((score: number, roundsPlayed: number) => {
-    if (!authState.user) return { success: false, error: 'No authenticated user' };
-
-    const updatedUser = {
-      ...authState.user,
-      highScore: score > authState.user.highScore ? score : authState.user.highScore,
-      totalRoundsPlayed: (authState.user.totalRoundsPlayed || 0) + roundsPlayed,
-      lastPlayedAt: new Date()
-    };
-    
-    saveUserToStorage(updatedUser);
-    setAuthState(prev => ({
-      ...prev,
-      user: updatedUser
-    }));
-    
-    return { 
-      success: true, 
-      highScoreUpdated: score > authState.user.highScore,
-      savedToDatabase: false 
-    };
-  }, [authState.user]);
-
+  // Remove local score update fallback - scores go directly to database only
   const updateScore = useCallback(async (score: number, roundsPlayed: number) => {
     if (!authState.user) return { success: false, error: 'No authenticated user' };
 
     try {
-      // Save score to database if user is authenticated
+      // Save score directly to database - no local fallback
       const response = await fetch('/api/scores', {
         method: 'POST',
         headers: {
@@ -93,11 +61,10 @@ export const useAuth = () => {
 
       if (!response.ok) {
         console.error('Failed to save score to database:', result.error);
-        // Fall back to local storage only
-        return updateScoreLocally(score, roundsPlayed);
+        return { success: false, error: result.error || 'Failed to save score' };
       }
 
-      // Update local user data with the database response
+      // Update memory state with the database response (no storage)
       const updatedUser = {
         ...authState.user,
         highScore: result.highScoreUpdated ? score : authState.user.highScore,
@@ -105,7 +72,6 @@ export const useAuth = () => {
         lastPlayedAt: new Date()
       };
       
-      saveUserToStorage(updatedUser);
       setAuthState(prev => ({
         ...prev,
         user: updatedUser
@@ -119,17 +85,16 @@ export const useAuth = () => {
 
     } catch (error) {
       console.error('Error saving score to database:', error);
-      // Fall back to local storage only
-      return updateScoreLocally(score, roundsPlayed);
+      return { success: false, error: 'Network error while saving score' };
     }
-  }, [authState.user, updateScoreLocally]);
+  }, [authState.user]);
 
   const requireAuth = useCallback(() => {
     return authState.isAuthenticated && authState.user;
   }, [authState.isAuthenticated, authState.user]);
 
   const updateUserData = useCallback((updatedUser: User) => {
-    saveUserToStorage(updatedUser);
+    // Only update memory state, no storage
     setAuthState(prev => ({
       ...prev,
       user: updatedUser

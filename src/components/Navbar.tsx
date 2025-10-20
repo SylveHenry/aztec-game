@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import InstructionsModal from './InstructionsModal';
-import { clearAllBrowserStorage } from '@/utils/storageManager';
 
 interface NavbarProps {
   onNewGame?: () => void;
@@ -27,9 +26,6 @@ const Navbar: React.FC<NavbarProps> = ({ onNewGame, onLogout }) => {
   };
 
   const handleNewGame = () => {
-    // Clear all browser storage first
-    clearAllBrowserStorage();
-    
     if (onLogout) {
       onLogout(); // Log out the current user
     }

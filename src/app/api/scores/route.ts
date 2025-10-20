@@ -112,25 +112,23 @@ export async function GET(request: NextRequest) {
 
     // Get top scores (global leaderboard) - only highest score per player
     const topScores = await scoresCollection.aggregate([
-      // Group by userId and get the highest score for each player
+      // Sort by score descending, then timestamp ascending
+      { $sort: { score: -1, timestamp: 1 } },
+      // Group by user and take the first document (which is the best score)
       {
         $group: {
           _id: "$userId",
           username: { $first: "$username" },
-          score: { $max: "$score" },
+          score: { $first: "$score" },
           roundsPlayed: { $first: "$roundsPlayed" },
           timestamp: { $first: "$timestamp" }
         }
       },
-      // Sort by score descending, then by timestamp ascending (earlier wins ties)
-      {
-        $sort: { score: -1, timestamp: 1 }
-      },
+      // Sort again by score to get the final leaderboard order
+      { $sort: { score: -1, timestamp: 1 } },
       // Limit results
-      {
-        $limit: Math.min(limit, 100)
-      },
-      // Reshape the output to match LeaderboardEntry format
+      { $limit: Math.min(limit, 100) },
+      // Reshape the output
       {
         $project: {
           _id: 0,
@@ -146,45 +144,28 @@ export async function GET(request: NextRequest) {
     // If userId is provided, get user's position in the global ranking
     let userPosition = null;
     if (userId) {
-      // Get user's best score
-      const userBestScore = await scoresCollection
-        .findOne(
-          { userId },
-          { sort: { score: -1, timestamp: 1 } }
-        );
-
-      if (userBestScore) {
-        // Count how many unique players have better scores than user's best score
-        const betterPlayersCount = await scoresCollection.aggregate([
-          {
-            $group: {
-              _id: "$userId",
-              maxScore: { $max: "$score" },
-              earliestTimestamp: { $min: "$timestamp" }
-            }
-          },
-          {
-            $match: {
-              $or: [
-                { maxScore: { $gt: userBestScore.score } },
-                { 
-                  maxScore: userBestScore.score, 
-                  earliestTimestamp: { $lt: userBestScore.timestamp } 
-                }
-              ]
-            }
-          },
-          {
-            $count: "count"
+      // Get all players' best scores
+      const allBestScores = await scoresCollection.aggregate([
+        { $sort: { score: -1, timestamp: 1 } },
+        {
+          $group: {
+            _id: "$userId",
+            score: { $first: "$score" },
+            timestamp: { $first: "$timestamp" }
           }
-        ]).toArray();
+        },
+        { $sort: { score: -1, timestamp: 1 } }
+      ]).toArray();
 
-        const betterCount = betterPlayersCount.length > 0 ? betterPlayersCount[0].count : 0;
+      // Find the user's rank
+      const userRank = allBestScores.findIndex(score => score._id === userId);
 
+      if (userRank !== -1) {
+        const userBestScore = allBestScores[userRank];
         userPosition = {
-          rank: betterCount + 1,
+          rank: userRank + 1,
           score: userBestScore.score,
-          username: userBestScore.username
+          username: topScores.find(u => u.userId === userId)?.username || ''
         };
       }
     }
